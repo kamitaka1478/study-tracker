@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>応用情報技術者試験対策アプリ</title>
+  <style>
+    :root {
+      /* 主要なカラーパレット */
+      --color-primary-start: #20b2aa; /* 明るい青緑 (Teal) */
+      --color-primary-end: #008080;   /* 濃い青緑 */
+      --color-secondary-start: #48bb78; /* 緑 (成功系) */
+      --color-secondary-end: #38a169;   /* 濃い緑 */
+      --color-danger-start: #f56565;    /* 赤 (削除系) */
+      --color-danger-end: #e53e3e;      /* 濃い赤 */
+      --color-edit-start: #ed8936;      /* オレンジ (編集系) */
+      --color-edit-end: #dd6b20;        /* 濃いオレンジ */
+      --color-info-start: var(--color-secondary-start); 
+      --color-info-end: var(--color-secondary-end);     
+
+      /* 背景とテキスト */
+      --color-bg-dark: #1a1a2e; 
+      --color-bg-medium: #16213e; 
+      --color-bg-light: #f4f7f6; 
+      --color-bg-paper: #ffffff; 
+      --color-text-dark: #2d3748; 
+      --color-text-light: #f7fafc; 
+      --color-text-medium: #4a5568; 
+      
+      /* ボーダーと影 */
+      --color-border: #e2e8f0;
+      --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37); 
+      --shadow-elevated: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07); 
+      --shadow-light: 0 5px 15px rgba(0,0,0,0.08); 
+      --shadow-medium: 0 10px 30px rgba(0,0,0,0.1); 
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+      min-height: 100vh;
+      color: var(--color-text-dark);
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: var(--shadow-glass);
+      padding: 30px;
+      margin-bottom: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .hero-section {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text; /* エラー修正: 標準プロパティを追加 */
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+      letter-spacing: -2px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.4rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    .countdown-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .countdown-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .countdown-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: white;
+      display: block;
+    }
+
+    .countdown-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
+
+    .progress-ring {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+    }
+
+    .progress-ring-circle {
+      stroke: rgba(255, 255, 255, 0.3);
+      fill: transparent;
+      stroke-width: 8;
+      stroke-linecap: round;
+    }
+
+    .progress-ring-progress {
+      stroke: #4facfe;
+      fill: transparent;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.35s;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    .daily-goals {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .goal-card {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 25px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .goal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .goal-status {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-completed {
+      background: rgba(76, 175, 80, 0.3);
+      color: #4caf50;
+    }
+
+    .status-pending {
+      background: rgba(255, 193, 7, 0.3);
+      color: #ffc107;
+    }
+
+    .motivational-agent {
+      background: linear-gradient(135deg, var(--color-secondary-start) 0%, var(--color-secondary-end) 100%);
+      border-radius: 20px;
+      padding: 30px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 20px;
+    }
+
+    .agent-message {
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .agent-tips {
+      font-size: 1rem;
+      opacity: 0.9;
+      font-style: italic;
+    }
+
+    .study-categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .category-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: var(--shadow-elevated);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .category-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .category-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: white; 
+    }
+
+    .category-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--color-text-dark);
+    }
+
+    .category-progress {
+      font-size: 0.9rem;
+      color: var(--color-text-medium);
+      margin-bottom: 15px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary-start), var(--color-primary-end));
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .action-btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, var(--color-secondary-start) 0%, var(--color-secondary-end) 100%);
+      color: white;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .floating-elements {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .floating-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .streak-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .streak-flame {
+      font-size: 1.5rem;
+      animation: flicker 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 1.1rem;
+      }
+      
+      .countdown-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .daily-goals {
+        grid-template-columns: 1fr;
+      }
+      
+      .quick-actions {
+        flex-direction: column;
+      }
+      
+      .action-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="floating-elements">
+    <div class="floating-circle" style="width: 100px; height: 100px; top: 10%; left: 10%; animation-delay: 0s;"></div>
+    <div class="floating-circle" style="width: 150px; height: 150px; top: 20%; right: 10%; animation-delay: 2s;"></div>
+    <div class="floating-circle" style="width: 80px; height: 80px; bottom: 20%; left: 20%; animation-delay: 4s;"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- ヒーローセクション -->
+    <div class="glass-card hero-section">
+      <h1 class="hero-title">🚀 応用情報合格への道</h1>
+      <p class="hero-subtitle">エンジニア転職を成功させる、あなた専用の学習パートナー</p>
+      
+      <!-- 試験までのカウントダウン -->
+      <div class="countdown-container">
+        <div class="countdown-item">
+          <span class="countdown-number" id="days-left">0</span>
+          <span class="countdown-label">日</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-number" id="hours-left">0</span>
+          <span class="countdown-label">時間</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-number" id="minutes-left">0</span>
+          <span class="countdown-label">分</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-number" id="study-streak">0</span>
+          <span class="countdown-label">日連続学習</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AIエージェント -->
+    <div class="motivational-agent">
+      <div class="agent-avatar">🤖</div>
+      <div class="agent-message" id="agent-message">
+        <!-- AIエージェントのメッセージがここに表示されます -->
+      </div>
+      <div class="agent-tips" id="agent-tips">
+        <!-- AIエージェントのヒントがここに表示されます -->
+      </div>
+    </div>
+
+    <!-- 今日の目標 -->
+    <div class="glass-card">
+      <h2 style="color: white; margin-bottom: 25px; font-size: 1.8rem;">📋 今日の学習目標</h2>
+      <div class="daily-goals">
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="goal-title">午前問題 (20問)</span>
+            <span class="goal-status status-completed">完了</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 100%;"></div>
+          </div>
+          <div class="streak-indicator">
+            <span class="streak-flame">🔥</span>
+            <span style="color: white; font-size: 0.9rem;">正答率: 85%</span>
+          </div>
+        </div>
+        
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="goal-title">午後問題 (1問)</span>
+            <span class="goal-status status-pending">進行中</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 40%;"></div>
+          </div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 10px;">
+            残り時間: 30分
+          </div>
+        </div>
+        
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="goal-title">復習ノート作成</span>
+            <span class="goal-status status-pending">未開始</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%;"></div>
+          </div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-top: 10px;">
+            苦手分野を重点的に
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学習分野 -->
+    <div class="glass-card">
+      <h2 style="color: white; margin-bottom: 25px; font-size: 1.8rem;">📚 学習分野別進捗</h2>
+      <div class="study-categories" id="study-categories-container">
+        <!-- 学習分野のカードがここに動的に追加されます -->
+      </div>
+    </div>
+
+    <!-- クイックアクション -->
+    <div class="glass-card">
+      <div class="quick-actions">
+        <!-- 学習記録を追加ボタンが study_management.html にリンクするように変更 -->
+        <button class="action-btn" id="add-log-btn" onclick="window.location.href='study_management.html'">📝 学習記録を追加</button>
+        <button class="action-btn" id="past-questions-btn">📊 過去問に挑戦</button>
+        <button class="action-btn" id="weakness-analysis-btn">🎯 弱点分析</button>
+        <button class="action-btn" id="review-plan-btn">📈 学習計画を見直す</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // APIのベースURL
+    const API_BASE_URL = 'http://localhost:3000'; // サーバーのポートに合わせてください
+
+    // カウントダウン機能
+    function updateCountdown() {
+      const examDate = new Date('2024-10-20'); // 試験日を設定
+      const now = new Date();
+      const timeDiff = examDate - now;
+      
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      document.getElementById('days-left').textContent = days;
+      document.getElementById('hours-left').textContent = hours;
+      document.getElementById('minutes-left').textContent = minutes;
+    }
+
+    // AIエージェントのメッセージを動的に変更
+    const agentMessages = [
+      {
+        message: "今日も素晴らしいペースで学習を続けていますね！午前問題で80%の正答率を達成しました。",
+        tip: "💡 明日は「データベース設計」の復習をお勧めします。過去問で少し苦手だった分野ですね。"
+      },
+      {
+        message: "学習を続けていますね！この継続力があれば必ず合格できます。",
+        tip: "🎯 今週はセキュリティ分野に重点を置いて学習しましょう。"
+      },
+      {
+        message: "昨日の学習時間が目標を下回りました。でも大丈夫、今日から再スタートです！",
+        tip: "⏰ 朝の30分を午前問題に使うと効率的ですよ。"
+      }
+    ];
+
+    let messageIndex = 0;
+
+    function updateAgentMessage() {
+      const currentMessage = agentMessages[messageIndex];
+      document.getElementById('agent-message').textContent = currentMessage.message;
+      document.getElementById('agent-tips').textContent = currentMessage.tip;
+      messageIndex = (messageIndex + 1) % agentMessages.length;
+    }
+
+    // APIから統計情報を取得してUIを更新する関数
+    async function fetchStats() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/stats`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const stats = await response.json();
+        console.log('取得した統計情報:', stats);
+
+        // 学習連続日数を更新
+        document.getElementById('study-streak').textContent = stats.studyStreak;
+
+        // 学習分野別進捗を動的に更新
+        const categoriesContainer = document.getElementById('study-categories-container');
+        categoriesContainer.innerHTML = ''; // 既存のカードをクリア
+
+        // アイコンと色をカテゴリにマッピング
+        const categoryIcons = {
+          'システム開発': { icon: '💻', startColor: '#20b2aa', endColor: '#008080' },
+          'データベース': { icon: '🗄️', startColor: '#48bb78', endColor: '#38a169' },
+          'ネットワーク': { icon: '🌐', startColor: '#f56565', endColor: '#e53e3e' },
+          'セキュリティ': { icon: '🔒', startColor: '#ed8936', endColor: '#dd6b20' },
+          'その他': { icon: '📖', startColor: '#FFD700', endColor: '#FFA500' } // デフォルト/その他のカテゴリ
+        };
+
+        let totalOverallTime = stats.totalTime; // 全体の学習時間 (分)
+
+        // categoryStatsがオブジェクトであることを確認し、キーをソートして処理
+        const sortedCategoryNames = Object.keys(stats.categoryStats).sort();
+
+        sortedCategoryNames.forEach(categoryName => {
+          const categoryData = stats.categoryStats[categoryName];
+          const iconData = categoryIcons[categoryName] || categoryIcons['その他']; // マッピングがない場合はその他を使用
+
+          const totalMinutes = categoryData.totalTime;
+          const totalHours = (totalMinutes / 60).toFixed(1); // 時間に変換
+
+          // プログレスバーの計算 (全体の学習時間に対する割合)
+          const progressPercentage = totalOverallTime > 0 ? (totalMinutes / totalOverallTime * 100).toFixed(0) : 0;
+
+          const categoryCardHtml = `
+            <div class="category-card">
+              <div class="category-icon" style="background: linear-gradient(135deg, ${iconData.startColor}, ${iconData.endColor});">
+                ${iconData.icon}
+              </div>
+              <div class="category-title">${categoryName}</div>
+              <div class="category-progress">学習時間: ${totalMinutes}分 (${totalHours}時間)</div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progressPercentage}%;"></div>
+              </div>
+            </div>
+          `;
+          categoriesContainer.insertAdjacentHTML('beforeend', categoryCardHtml);
+        });
+
+        // プログレスバーのアニメーションを再度適用
+        const progressBars = categoriesContainer.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+          const width = bar.style.width;
+          bar.style.width = '0%'; // 一度0%にしてからアニメーション
+          setTimeout(() => {
+            bar.style.width = width;
+          }, 100); // 少しディレイを持たせてアニメーション
+        });
+
+      } catch (error) {
+        console.error('統計情報の取得に失敗しました:', error);
+        // エラー時はデフォルト値を表示またはメッセージを表示
+        document.getElementById('study-streak').textContent = 'N/A';
+        document.getElementById('study-categories-container').innerHTML = '<p style="color: white; text-align: center;">学習統計の読み込みに失敗しました。</p>';
+      }
+    }
+
+    // 初期化
+    updateCountdown();
+    fetchStats(); // ページロード時に統計情報を取得
+    setInterval(updateCountdown, 60000); // 1分ごとに更新
+    setInterval(updateAgentMessage, 10000); // 10秒ごとにメッセージ変更
+    setInterval(fetchStats, 5 * 60 * 1000); // 5分ごとに統計情報を再取得
+    updateAgentMessage(); // 初回メッセージ表示
+  </script>
+</body>
+</html>

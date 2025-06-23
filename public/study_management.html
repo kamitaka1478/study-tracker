@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学習記録管理</title>
+  <style>
+    :root {
+      /* 主要なカラーパレット (dashboard.htmlと共通) */
+      --color-primary-start: #20b2aa; /* 明るい青緑 (Teal) */
+      --color-primary-end: #008080;   /* 濃い青緑 */
+      --color-secondary-start: #48bb78; /* 緑 (成功系) */
+      --color-secondary-end: #38a169;   /* 濃い緑 */
+      --color-danger-start: #f56565;    /* 赤 (削除系) */
+      --color-danger-end: #e53e3e;      /* 濃い赤 */
+      --color-edit-start: #ed8936;      /* オレンジ (編集系) */
+      --color-edit-end: #dd6b20;        /* 濃いオレンジ */
+      --color-info-start: var(--color-secondary-start); 
+      --color-info-end: var(--color-secondary-end);     
+
+      /* 背景とテキスト (dashboard.htmlと共通) */
+      --color-bg-light: #f4f7f6; /* 全体背景の淡い色 */
+      --color-bg-paper: #ffffff; /* コンテナ背景の白 */
+      --color-text-dark: #2d3748; /* 見出し、主要テキスト */
+      --color-text-medium: #4a5568; /* ラベル、情報テキスト */
+      --color-text-light: #f7fafc; /* 白抜き文字 */
+
+      /* ボーダーと影 (dashboard.htmlと共通) */
+      --color-border: #e2e8f0;
+      --shadow-light: 0 5px 15px rgba(0,0,0,0.08);
+      --shadow-medium: 0 10px 30px rgba(0,0,0,0.1);
+      /* glass-cardのシャドウはdashboard.htmlでのみ使用 */
+      --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37); 
+      --shadow-elevated: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      color: var(--color-text-dark);
+    }
+    
+    .container {
+      background: var(--color-bg-paper);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: var(--shadow-medium);
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      color: var(--color-text-dark);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      letter-spacing: 1px;
+    }
+    
+    h2 {
+      color: var(--color-text-dark);
+      border-bottom: 3px solid var(--color-primary-start);
+      padding-bottom: 10px;
+      margin-top: 30px;
+      font-size: 1.8em;
+    }
+    
+    h3 {
+      color: var(--color-text-dark);
+      margin-top: 25px;
+      margin-bottom: 15px;
+      font-size: 1.4em;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: var(--color-text-medium);
+    }
+    
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--color-primary-end);
+      box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1);
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--color-primary-start) 0%, var(--color-primary-end) 100%);
+      color: var(--color-text-light);
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 128, 128, 0.4);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--color-secondary-start) 0%, var(--color-secondary-end) 100%);
+    }
+    .btn-secondary:hover {
+      box-shadow: 0 5px 15px rgba(56, 161, 105, 0.4);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, var(--color-danger-start) 0%, var(--color-danger-end) 100%);
+      padding: 8px 12px;
+      width: auto;
+      margin-left: 10px;
+      margin-top: 0;
+    }
+    .btn-danger:hover {
+      box-shadow: 0 5px 15px rgba(229, 62, 62, 0.4);
+    }
+    
+    .btn-edit {
+      background: linear-gradient(135deg, var(--color-edit-start) 0%, var(--color-edit-end) 100%);
+      padding: 8px 12px;
+      width: auto;
+      margin-left: 5px;
+      margin-top: 0;
+    }
+    .btn-edit:hover {
+      box-shadow: 0 5px 15px rgba(221, 107, 32, 0.4);
+    }
+    
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    
+    li {
+      background: var(--color-bg-light);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 4px solid var(--color-primary-start);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-light);
+    }
+    
+    .item-info {
+      flex-grow: 1;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--color-text-dark);
+    }
+
+    .item-info strong {
+      color: var(--color-text-dark);
+    }
+    
+    .item-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, var(--color-secondary-start) 0%, var(--color-secondary-end) 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: var(--shadow-light);
+    }
+    
+    .stat-number {
+      font-size: 2.2em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    /* --- レスポンシブデザイン --- */
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        font-size: 1.6em;
+        margin-top: 25px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      li {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .item-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 15px;
+      }
+
+      button {
+        padding: 10px;
+        font-size: 15px;
+      }
+
+      .btn-danger, .btn-edit {
+        padding: 8px 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.8em;
+      }
+      h2 {
+        font-size: 1.4em;
+      }
+      .stat-number {
+        font-size: 1.8em;
+      }
+      input, select, button {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+
+    .log-date-header {
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+      color: var(--color-primary-end);
+      text-align: center;
+      border-bottom: 2px solid var(--color-border);
+      padding-bottom: 5px;
+    }
+
+    .daily-summary {
+      text-align: center;
+      margin: 15px 0 25px;
+      font-weight: bold;
+      color: var(--color-text-dark);
+      font-size: 1.1em;
+    }
+
+    @media (max-width: 768px) {
+      .log-date-header {
+        font-size: 1.3em;
+        margin-top: 20px;
+        margin-bottom: 10px;
+      }
+      .daily-summary {
+        font-size: 1em;
+        margin: 10px 0 20px;
+      }
+    }
+
+    /* ダッシュボードに戻るボタン用スタイル */
+    .back-to-dashboard-btn {
+        display: block;
+        width: fit-content;
+        margin: 20px auto;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, var(--color-info-start) 0%, var(--color-info-end) 100%);
+        color: var(--color-text-light);
+        border: none;
+        border-radius: 50px;
+        font-weight: bold;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    .back-to-dashboard-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 学習記録管理</h1>
+    
+    <!-- ダッシュボードへ戻るボタン -->
+    <a href="dashboard.html" class="back-to-dashboard-btn">ダッシュボードに戻る</a>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="totalItems">0</div>
+        <div>学習項目数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalLogs">0</div>
+        <div>学習記録数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalTime">0</div>
+        <div>総学習時間（分）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h2>📝 学習項目管理</h2>
+    
+    <form id="study-item-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="itemName">学習項目名：</label>
+          <input type="text" id="itemName" required placeholder="例: JavaScript基礎" />
+        </div>
+        <div class="form-group">
+          <label for="itemCategory">カテゴリ：</label>
+          <input type="text" id="itemCategory" required placeholder="例: プログラミング" />
+          <input type="hidden" id="studyItemIdForEdit">
+        </div>
+      </div>
+      <button type="submit" class="btn-secondary">学習項目を追加</button>
+      <button type="button" id="cancelStudyItemEdit" class="btn-secondary hidden" style="background: gray; margin-top: 10px;">キャンセル</button>
+    </form>
+
+    <h3>学習項目一覧</h3>
+    <ul id="study-items"></ul>
+  </div>
+
+  <div class="container">
+    <h2>📊 学習ログ記録</h2>
+    
+    <form id="log-form">
+      <input type="hidden" id="logId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="studyItemId">学習項目：</label>
+          <select id="studyItemId" required>
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="date">日付：</label>
+          <input type="date" id="date" required />
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="content">学習内容：</label>
+          <input type="text" id="content" required placeholder="例: 変数と関数について学習" />
+        </div>
+        <div class="form-group">
+          <label for="duration">学習時間（分）：</label>
+          <input type="number" id="duration" required min="1" placeholder="30" />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="memo">メモ：</label>
+        <input type="text" id="memo" placeholder="学習の感想や気づき" />
+      </div>
+      
+      <div class="form-group">
+        <label for="tags">タグ（カンマ区切り）：</label>
+        <input type="text" id="tags" placeholder="基礎, 重要, 復習必要" />
+      </div>
+      
+      <button type="submit" id="log-submit-btn" class="btn-secondary">学習ログを追加</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <h2>📋 学習ログ一覧</h2>
+    <div class="form-group">
+      <label for="filterItem">フィルター：</label>
+      <select id="filterItem">
+        <option value="">全ての項目</option>
+      </select>
+    </div>
+    <ul id="log-list"></ul>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:3000'; // サーバーのポートに合わせてください
+    let studyItems = [];
+    let logs = []; // グローバル変数 logs を定義
+
+    // 今日の日付をデフォルトに設定
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    async function loadStudyItems() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/study-items`);
+        studyItems = await res.json();
+        updateStudyItemsDisplay();
+        updateStats(); // 統計情報を更新
+      } catch (error) {
+        console.error('学習項目の読み込みに失敗:', error);
+      }
+    }
+
+    function updateStudyItemsDisplay() {
+      const list = document.getElementById('study-items');
+      const select = document.getElementById('studyItemId');
+      const filterSelect = document.getElementById('filterItem');
+
+      // リストとセレクトボックスをクリア
+      list.innerHTML = '';
+      select.innerHTML = '<option value="">選択してください</option>';
+      filterSelect.innerHTML = '<option value="">全ての項目</option>';
+
+      studyItems.forEach(item => {
+        // 学習項目一覧の表示
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div class="item-info">
+            <strong>${item.name}</strong> (${item.category})
+          </div>
+          <div class="item-actions">
+            <button class="btn-edit edit-item-btn" data-id="${item.id}">✏️ 編集</button>
+            <button class="btn-danger delete-item-btn" data-id="${item.id}">🗑️ 削除</button>
+          </div>
+        `;
+        list.appendChild(li);
+
+        // 学習ログ記録フォームのセレクトボックスに追加
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+
+        // 学習ログ一覧のフィルターセレクトボックスに追加
+        const filterOption = document.createElement('option');
+        filterOption.value = item.id;
+        filterOption.textContent = item.name;
+        filterSelect.appendChild(filterOption);
+      });
+
+      // 学習項目ボタンのイベントリスナーをアタッチ
+      attachStudyItemEventListeners();
+    }
+
+    async function loadLogs() { 
+      try {
+        const filterItemId = document.getElementById('filterItem').value;
+        const url = filterItemId ? `${API_BASE_URL}/logs?studyItemId=${filterItemId}` : `${API_BASE_URL}/logs`;
+
+        const res = await fetch(url);
+        logs = await res.json(); 
+        updateLogsDisplay(); 
+        updateStats(); 
+      } catch (error) {
+        console.error('学習ログの読み込みに失敗:', error);
+      }
+    }
+
+    function updateLogsDisplay() {
+      const list = document.getElementById('log-list');
+      list.innerHTML = ''; 
+
+      let filteredLogs = logs; 
+
+      // ログを日付と作成時刻でソート（新しい日付が上、同じ日付内では新しい時間が上）
+      filteredLogs.sort((a, b) => {
+        // createdAtが存在しない場合や無効な場合は、dateのみを使用
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        
+        // 日付でソート
+        const dateCompare = dateB - dateA;
+        if (dateCompare !== 0) return dateCompare;
+
+        // 同じ日付の場合、createdAtでソート（より新しいものが上）
+        // createdAtが両方とも存在しない場合は順序を維持
+        if (a.createdAt && b.createdAt) {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        return 0; 
+      });
+
+      let currentDate = '';
+      let dailyTotalMinutes = 0;
+
+      filteredLogs.forEach((log, index) => {
+        const logDate = log.date; 
+
+        // 日付が変わったら、前日の合計時間を表示（初回以外）
+        if (logDate !== currentDate) {
+          if (currentDate !== '') {
+            const dailyHours = Math.floor(dailyTotalMinutes / 60);
+            const dailyMinutes = dailyTotalMinutes % 60;
+            const dailyTotalDiv = document.createElement('div');
+            dailyTotalDiv.className = 'daily-summary'; 
+            dailyTotalDiv.innerHTML = `
+              ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
+            `;
+            list.appendChild(dailyTotalDiv);
+          }
+          const dateHeader = document.createElement('h3');
+          dateHeader.textContent = logDate;
+          dateHeader.className = 'log-date-header'; 
+          list.appendChild(dateHeader);
+          currentDate = logDate;
+          dailyTotalMinutes = 0; 
+        }
+
+        dailyTotalMinutes += parseInt(log.duration);
+
+        const li = document.createElement('li');
+        const studyItem = studyItems.find(item => item.id === log.studyItemId);
+        const itemName = studyItem ? studyItem.name : '不明な項目';
+
+        // createdAtが存在しない場合でもエラーにならないように修正
+        const displayTime = log.createdAt ? log.createdAt.substring(11, 16) : ''; // HH:MM形式
+        const displayDateAndTime = `${log.date} ${displayTime}`.trim(); // スペースの調整
+
+        li.innerHTML = `
+          <div class="item-info">
+            <strong>${itemName}</strong> - ${log.duration}分<br>
+            📖 ${log.content}<br>
+            ${log.memo ? `💭 ${log.memo}<br>` : ''}
+            ${log.tags && log.tags.length > 0 ? `🏷️ ${log.tags.join(', ')}<br>` : ''}
+            <small>${displayDateAndTime}</small>
+          </div>
+          <div class="item-actions">
+            <button class="btn-edit edit-btn" data-id="${log.id}">✏️ 編集</button>
+            <button class="btn-danger delete-btn" data-id="${log.id}">🗑️ 削除</button>
+          </div>
+        `;
+        list.appendChild(li);
+
+        if (index === filteredLogs.length - 1) {
+          const dailyHours = Math.floor(dailyTotalMinutes / 60);
+          const dailyMinutes = dailyTotalMinutes % 60;
+          const dailyTotalDiv = document.createElement('div');
+          dailyTotalDiv.className = 'daily-summary';
+          dailyTotalDiv.innerHTML = `
+            ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
+          `;
+          list.appendChild(dailyTotalDiv);
+        }
+      });
+
+      attachLogEventListeners();
+    }
+
+    function attachLogEventListeners() {
+      document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+          if (confirm('本当に削除しますか？')) {
+            const id = button.getAttribute('data-id');
+            try {
+              await fetch(`${API_BASE_URL}/logs/${id}`, { method: 'DELETE' });
+              await loadLogs(); 
+            } catch (error) {
+              alert('削除に失敗しました');
+            }
+          }
+        });
+      });
+
+      document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-id');
+          const log = logs.find(l => l.id === id); 
+
+          if (log) {
+            document.getElementById('logId').value = log.id;
+            document.getElementById('studyItemId').value = log.studyItemId;
+            document.getElementById('date').value = log.date;
+            document.getElementById('content').value = log.content;
+            document.getElementById('duration').value = log.duration;
+            document.getElementById('memo').value = log.memo || '';
+            document.getElementById('tags').value = log.tags.join(',');
+            document.getElementById('log-submit-btn').textContent = '学習ログを更新';
+
+            document.getElementById('log-form').scrollIntoView({
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+    }
+
+    function attachStudyItemEventListeners() {
+      // 削除ボタン
+      document.querySelectorAll('.delete-item-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+          if (confirm('この学習項目を本当に削除しますか？\nこの項目に関連する学習ログは削除されません。')) {
+            const id = button.getAttribute('data-id');
+            try {
+              const res = await fetch(`${API_BASE_URL}/study-items/${id}`, {
+                method: 'DELETE'
+              });
+              if (res.ok) {
+                alert('学習項目を削除しました！');
+                await loadStudyItems(); 
+                await loadLogs(); 
+              } else {
+                const errorData = await res.json();
+                alert(`削除に失敗しました: ${errorData.message}`);
+              }
+            } catch (error) {
+              console.error('学習項目削除エラー:', error);
+              alert('削除中にエラーが発生しました。');
+            }
+          }
+        });
+      });
+
+      // 編集ボタン
+      document.querySelectorAll('.edit-item-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          const id = button.getAttribute('data-id');
+          const itemToEdit = studyItems.find(item => item.id === id);
+
+          if (itemToEdit) {
+            document.getElementById('studyItemIdForEdit').value = itemToEdit.id;
+            document.getElementById('itemName').value = itemToEdit.name;
+            document.getElementById('itemCategory').value = itemToEdit.category;
+
+            document.querySelector('#study-item-form button[type="submit"]').textContent = '学習項目を更新';
+
+            document.getElementById('cancelStudyItemEdit').classList.remove('hidden');
+
+            document.getElementById('study-item-form').scrollIntoView({
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('totalItems').textContent = studyItems.length;
+      document.getElementById('totalLogs').textContent = logs.length;
+
+      const totalMinutes = logs.reduce((sum, log) => sum + (parseInt(log.duration) || 0), 0);
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      document.getElementById('totalTime').textContent =
+        `${totalMinutes}分 （${hours}時間${minutes}分）`;
+    }
+
+    // 学習項目追加フォーム
+    document.getElementById('study-item-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('itemName').value;
+      const category = document.getElementById('itemCategory').value;
+      const studyItemIdForEdit = document.getElementById('studyItemIdForEdit').value;
+
+      try {
+        let res;
+        if (studyItemIdForEdit) {
+          res = await fetch(`${API_BASE_URL}/study-items/${studyItemIdForEdit}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name,
+              category
+            })
+          });
+        } else {
+          res = await fetch(`${API_BASE_URL}/study-items`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name,
+              category
+            })
+          });
+        }
+
+        if (res.ok) {
+          document.getElementById('study-item-form').reset();
+          document.getElementById('studyItemIdForEdit').value = '';
+          document.querySelector('#study-item-form button[type="submit"]').textContent = '学習項目を追加';
+
+          document.getElementById('cancelStudyItemEdit').classList.add('hidden');
+
+          await loadStudyItems();
+          await loadLogs();
+          alert(studyItemIdForEdit ? '学習項目を更新しました！' : '学習項目を追加しました！');
+        } else {
+          const errorData = await res.json();
+          alert(`処理に失敗しました: ${errorData.message}`);
+        }
+      } catch (error) {
+        console.error('学習項目保存エラー:', error);
+        alert('エラーが発生しました。');
+      }
+    });
+
+    // 学習ログフォーム
+    document.getElementById('log-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const logId = document.getElementById('logId').value;
+      const studyItemId = document.getElementById('studyItemId').value;
+      const date = document.getElementById('date').value;
+      const content = document.getElementById('content').value;
+      const duration = parseInt(document.getElementById('duration').value);
+      const memo = document.getElementById('memo').value;
+      const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t);
+
+      const payload = {
+        studyItemId,
+        date,
+        content,
+        duration,
+        memo,
+        tags
+      };
+
+      try {
+        if (logId) {
+          // 編集
+          await fetch(`${API_BASE_URL}/logs/${logId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          // 新規追加
+          await fetch(`${API_BASE_URL}/logs`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        // フォームリセット
+        document.getElementById('log-form').reset();
+        document.getElementById('logId').value = '';
+        document.getElementById('log-submit-btn').textContent = '学習ログを追加';
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+        // 再読み込み
+        await loadLogs(); 
+
+        alert(logId ? '学習ログを更新しました！' : '学習ログを追加しました！');
+      } catch (error) {
+        alert('保存に失敗しました');
+      }
+    });
+
+    // 学習項目編集キャンセルボタン
+    document.getElementById('cancelStudyItemEdit').addEventListener('click', () => {
+      document.getElementById('study-item-form').reset();
+      document.getElementById('studyItemIdForEdit').value = '';
+      document.querySelector('#study-item-form button[type="submit"]').textContent = '学習項目を追加';
+      document.getElementById('cancelStudyItemEdit').classList.add('hidden');
+    });
+
+    // フィルター機能
+    document.getElementById('filterItem').addEventListener('change', () => {
+      loadLogs();
+    });
+
+    // 初期化 (ページロード時に一度だけ実行)
+    (async () => {
+      await loadStudyItems();
+      await loadLogs();
+    })();
+  </script>
+</body>
+</html>
