@@ -8,13 +8,13 @@
     :root {
       /* 主要なカラーパレット (dashboard.htmlと共通) */
       --color-primary-start: #20b2aa; /* 明るい青緑 (Teal) */
-      --color-primary-end: #008080;   /* 濃い青緑 */
+      --color-primary-end: #008080;    /* 濃い青緑 */
       --color-secondary-start: #48bb78; /* 緑 (成功系) */
-      --color-secondary-end: #38a169;   /* 濃い緑 */
-      --color-danger-start: #f56565;    /* 赤 (削除系) */
-      --color-danger-end: #e53e3e;      /* 濃い赤 */
-      --color-edit-start: #ed8936;      /* オレンジ (編集系) */
-      --color-edit-end: #dd6b20;        /* 濃いオレンジ */
+      --color-secondary-end: #38a169;    /* 濃い緑 */
+      --color-danger-start: #f56565;     /* 赤 (削除系) */
+      --color-danger-end: #e53e3e;       /* 濃い赤 */
+      --color-edit-start: #ed8936;       /* オレンジ (編集系) */
+      --color-edit-end: #dd6b20;         /* 濃いオレンジ */
       --color-info-start: var(--color-secondary-start); 
       --color-info-end: var(--color-secondary-end);     
 
@@ -337,7 +337,6 @@
   <div class="container">
     <h1>📚 学習記録管理</h1>
     
-    <!-- ダッシュボードへ戻るボタン -->
     <a href="dashboard.html" class="back-to-dashboard-btn">ダッシュボードに戻る</a>
 
     <div class="stats">
@@ -442,9 +441,37 @@
     // 今日の日付をデフォルトに設定
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
 
+    // --- 認証トークン取得ヘルパー関数 ---
+    function getAuthHeaders() {
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+            console.warn('認証トークンがLocalStorageに見つかりません。');
+            // 必要に応じてログインページにリダイレクト
+            // window.location.href = 'dashboard.html'; // または login.html
+            return {}; // ヘッダーなしで返すか、エラーをスロー
+        }
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+    // --- 認証トークン取得ヘルパー関数 ここまで ---
+
     async function loadStudyItems() {
       try {
-        const res = await fetch(`${API_BASE_URL}/study-items`);
+        const headers = getAuthHeaders();
+        // トークンがない場合はAPIリクエストを行わない（401回避）
+        if (!headers['Authorization']) {
+            console.error('学習項目の読み込みに失敗: 認証されていません。');
+            return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/study-items`, { headers: headers });
+        // レスポンスがOKでない場合（例: 401 Unauthorized）、エラーとして処理
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+        }
         studyItems = await res.json();
         updateStudyItemsDisplay();
         updateStats(); // 統計情報を更新
@@ -463,32 +490,37 @@
       select.innerHTML = '<option value="">選択してください</option>';
       filterSelect.innerHTML = '<option value="">全ての項目</option>';
 
-      studyItems.forEach(item => {
-        // 学習項目一覧の表示
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <div class="item-info">
-            <strong>${item.name}</strong> (${item.category})
-          </div>
-          <div class="item-actions">
-            <button class="btn-edit edit-item-btn" data-id="${item.id}">✏️ 編集</button>
-            <button class="btn-danger delete-item-btn" data-id="${item.id}">🗑️ 削除</button>
-          </div>
-        `;
-        list.appendChild(li);
+      // studyItems が配列であることを確認してから forEach を呼び出す
+      if (Array.isArray(studyItems)) {
+        studyItems.forEach(item => {
+          // 学習項目一覧の表示
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div class="item-info">
+              <strong>${item.name}</strong> (${item.category})
+            </div>
+            <div class="item-actions">
+              <button class="btn-edit edit-item-btn" data-id="${item.id}">✏️ 編集</button>
+              <button class="btn-danger delete-item-btn" data-id="${item.id}">🗑️ 削除</button>
+            </div>
+          `;
+          list.appendChild(li);
 
-        // 学習ログ記録フォームのセレクトボックスに追加
-        const option = document.createElement('option');
-        option.value = item.id;
-        option.textContent = item.name;
-        select.appendChild(option);
+          // 学習ログ記録フォームのセレクトボックスに追加
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.name;
+          select.appendChild(option);
 
-        // 学習ログ一覧のフィルターセレクトボックスに追加
-        const filterOption = document.createElement('option');
-        filterOption.value = item.id;
-        filterOption.textContent = item.name;
-        filterSelect.appendChild(filterOption);
-      });
+          // 学習ログ一覧のフィルターセレクトボックスに追加
+          const filterOption = document.createElement('option');
+          filterOption.value = item.id;
+          filterOption.textContent = item.name;
+          filterSelect.appendChild(filterOption);
+        });
+      } else {
+          console.error("studyItems は配列ではありません。", studyItems);
+      }
 
       // 学習項目ボタンのイベントリスナーをアタッチ
       attachStudyItemEventListeners();
@@ -496,10 +528,22 @@
 
     async function loadLogs() { 
       try {
+        const headers = getAuthHeaders();
+        // トークンがない場合はAPIリクエストを行わない（401回避）
+        if (!headers['Authorization']) {
+            console.error('学習ログの読み込みに失敗: 認証されていません。');
+            return;
+        }
+
         const filterItemId = document.getElementById('filterItem').value;
         const url = filterItemId ? `${API_BASE_URL}/logs?studyItemId=${filterItemId}` : `${API_BASE_URL}/logs`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: headers });
+        // レスポンスがOKでない場合（例: 401 Unauthorized）、エラーとして処理
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+        }
         logs = await res.json(); 
         updateLogsDisplay(); 
         updateStats(); 
@@ -512,88 +556,94 @@
       const list = document.getElementById('log-list');
       list.innerHTML = ''; 
 
-      let filteredLogs = logs; 
+      let currentLogs = logs; // グローバル変数 logs を使う
 
-      // ログを日付と作成時刻でソート（新しい日付が上、同じ日付内では新しい時間が上）
-      filteredLogs.sort((a, b) => {
-        // createdAtが存在しない場合や無効な場合は、dateのみを使用
-        const dateA = new Date(a.createdAt || a.date);
-        const dateB = new Date(b.createdAt || b.date);
-        
-        // 日付でソート
-        const dateCompare = dateB - dateA;
-        if (dateCompare !== 0) return dateCompare;
+      // ログが配列であることを確認してからソートとforEachを呼び出す
+      if (Array.isArray(currentLogs)) {
+        // ログを日付と作成時刻でソート（新しい日付が上、同じ日付内では新しい時間が上）
+        currentLogs.sort((a, b) => {
+          // createdAtが存在しない場合や無効な場合は、dateのみを使用
+          const dateA = new Date(a.createdAt || a.date);
+          const dateB = new Date(b.createdAt || b.date);
+          
+          // 日付でソート
+          const dateCompare = dateB - dateA;
+          if (dateCompare !== 0) return dateCompare;
 
-        // 同じ日付の場合、createdAtでソート（より新しいものが上）
-        // createdAtが両方とも存在しない場合は順序を維持
-        if (a.createdAt && b.createdAt) {
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        }
-        return 0; 
-      });
+          // 同じ日付の場合、createdAtでソート（より新しいものが上）
+          // createdAtが両方とも存在しない場合は順序を維持
+          if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          }
+          return 0; 
+        });
 
-      let currentDate = '';
-      let dailyTotalMinutes = 0;
+        let currentDate = '';
+        let dailyTotalMinutes = 0;
 
-      filteredLogs.forEach((log, index) => {
-        const logDate = log.date; 
+        currentLogs.forEach((log, index) => {
+          const logDate = log.date; 
 
-        // 日付が変わったら、前日の合計時間を表示（初回以外）
-        if (logDate !== currentDate) {
-          if (currentDate !== '') {
+          // 日付が変わったら、前日の合計時間を表示（初回以外）
+          if (logDate !== currentDate) {
+            if (currentDate !== '') {
+              const dailyHours = Math.floor(dailyTotalMinutes / 60);
+              const dailyMinutes = dailyTotalMinutes % 60;
+              const dailyTotalDiv = document.createElement('div');
+              dailyTotalDiv.className = 'daily-summary'; 
+              dailyTotalDiv.innerHTML = `
+                ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
+              `;
+              list.appendChild(dailyTotalDiv);
+            }
+            const dateHeader = document.createElement('h3');
+            dateHeader.textContent = logDate;
+            dateHeader.className = 'log-date-header'; 
+            list.appendChild(dateHeader);
+            currentDate = logDate;
+            dailyTotalMinutes = 0; 
+          }
+
+          dailyTotalMinutes += parseInt(log.duration);
+
+          const li = document.createElement('li');
+          const studyItem = studyItems.find(item => item.id === log.studyItemId);
+          const itemName = studyItem ? studyItem.name : '不明な項目';
+
+          // createdAtが存在しない場合でもエラーにならないように修正
+          const displayTime = log.createdAt ? log.createdAt.substring(11, 16) : ''; // HH:MM形式
+          const displayDateAndTime = `${log.date} ${displayTime}`.trim(); // スペースの調整
+
+          li.innerHTML = `
+            <div class="item-info">
+              <strong>${itemName}</strong> - ${log.duration}分<br>
+              📖 ${log.content}<br>
+              ${log.memo ? `💭 ${log.memo}<br>` : ''}
+              ${log.tags && log.tags.length > 0 ? `🏷️ ${log.tags.join(', ')}<br>` : ''}
+              <small>${displayDateAndTime}</small>
+            </div>
+            <div class="item-actions">
+              <button class="btn-edit edit-btn" data-id="${log.id}">✏️ 編集</button>
+              <button class="btn-danger delete-btn" data-id="${log.id}">🗑️ 削除</button>
+            </div>
+          `;
+          list.appendChild(li);
+
+          // 最後の要素の場合、日計を表示
+          if (index === currentLogs.length - 1) {
             const dailyHours = Math.floor(dailyTotalMinutes / 60);
             const dailyMinutes = dailyTotalMinutes % 60;
             const dailyTotalDiv = document.createElement('div');
-            dailyTotalDiv.className = 'daily-summary'; 
+            dailyTotalDiv.className = 'daily-summary';
             dailyTotalDiv.innerHTML = `
               ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
             `;
             list.appendChild(dailyTotalDiv);
           }
-          const dateHeader = document.createElement('h3');
-          dateHeader.textContent = logDate;
-          dateHeader.className = 'log-date-header'; 
-          list.appendChild(dateHeader);
-          currentDate = logDate;
-          dailyTotalMinutes = 0; 
-        }
-
-        dailyTotalMinutes += parseInt(log.duration);
-
-        const li = document.createElement('li');
-        const studyItem = studyItems.find(item => item.id === log.studyItemId);
-        const itemName = studyItem ? studyItem.name : '不明な項目';
-
-        // createdAtが存在しない場合でもエラーにならないように修正
-        const displayTime = log.createdAt ? log.createdAt.substring(11, 16) : ''; // HH:MM形式
-        const displayDateAndTime = `${log.date} ${displayTime}`.trim(); // スペースの調整
-
-        li.innerHTML = `
-          <div class="item-info">
-            <strong>${itemName}</strong> - ${log.duration}分<br>
-            📖 ${log.content}<br>
-            ${log.memo ? `💭 ${log.memo}<br>` : ''}
-            ${log.tags && log.tags.length > 0 ? `🏷️ ${log.tags.join(', ')}<br>` : ''}
-            <small>${displayDateAndTime}</small>
-          </div>
-          <div class="item-actions">
-            <button class="btn-edit edit-btn" data-id="${log.id}">✏️ 編集</button>
-            <button class="btn-danger delete-btn" data-id="${log.id}">🗑️ 削除</button>
-          </div>
-        `;
-        list.appendChild(li);
-
-        if (index === filteredLogs.length - 1) {
-          const dailyHours = Math.floor(dailyTotalMinutes / 60);
-          const dailyMinutes = dailyTotalMinutes % 60;
-          const dailyTotalDiv = document.createElement('div');
-          dailyTotalDiv.className = 'daily-summary';
-          dailyTotalDiv.innerHTML = `
-            ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
-          `;
-          list.appendChild(dailyTotalDiv);
-        }
-      });
+        });
+      } else {
+          console.error("logs は配列ではありません。", logs);
+      }
 
       attachLogEventListeners();
     }
@@ -604,10 +654,18 @@
           if (confirm('本当に削除しますか？')) {
             const id = button.getAttribute('data-id');
             try {
-              await fetch(`${API_BASE_URL}/logs/${id}`, { method: 'DELETE' });
+              const headers = getAuthHeaders();
+              if (!headers['Authorization']) { return; } // トークンがなければ処理しない
+
+              const res = await fetch(`${API_BASE_URL}/logs/${id}`, { method: 'DELETE', headers: headers });
+              if (!res.ok) {
+                  const errorData = await res.json();
+                  throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+              }
               await loadLogs(); 
             } catch (error) {
-              alert('削除に失敗しました');
+              alert('削除に失敗しました: ' + error.message);
+              console.error('学習ログ削除エラー:', error);
             }
           }
         });
@@ -643,8 +701,12 @@
           if (confirm('この学習項目を本当に削除しますか？\nこの項目に関連する学習ログは削除されません。')) {
             const id = button.getAttribute('data-id');
             try {
+              const headers = getAuthHeaders();
+              if (!headers['Authorization']) { return; } // トークンがなければ処理しない
+
               const res = await fetch(`${API_BASE_URL}/study-items/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: headers
               });
               if (res.ok) {
                 alert('学習項目を削除しました！');
@@ -706,13 +768,17 @@
       const studyItemIdForEdit = document.getElementById('studyItemIdForEdit').value;
 
       try {
+        const headers = getAuthHeaders();
+        if (!headers['Authorization']) { 
+            alert('認証されていません。ログインしてください。');
+            return; 
+        }
+
         let res;
         if (studyItemIdForEdit) {
           res = await fetch(`${API_BASE_URL}/study-items/${studyItemIdForEdit}`, {
             method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: headers, // 認証ヘッダーを使用
             body: JSON.stringify({
               name,
               category
@@ -721,9 +787,7 @@
         } else {
           res = await fetch(`${API_BASE_URL}/study-items`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: headers, // 認証ヘッダーを使用
             body: JSON.stringify({
               name,
               category
@@ -773,24 +837,34 @@
       };
 
       try {
+        const headers = getAuthHeaders();
+        if (!headers['Authorization']) { 
+            alert('認証されていません。ログインしてください。');
+            return; 
+        }
+
         if (logId) {
           // 編集
-          await fetch(`${API_BASE_URL}/logs/${logId}`, {
+          const res = await fetch(`${API_BASE_URL}/logs/${logId}`, {
             method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: headers, // 認証ヘッダーを使用
             body: JSON.stringify(payload)
           });
+          if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+          }
         } else {
           // 新規追加
-          await fetch(`${API_BASE_URL}/logs`, {
+          const res = await fetch(`${API_BASE_URL}/logs`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: headers, // 認証ヘッダーを使用
             body: JSON.stringify(payload)
           });
+          if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+          }
         }
 
         // フォームリセット
@@ -804,7 +878,8 @@
 
         alert(logId ? '学習ログを更新しました！' : '学習ログを追加しました！');
       } catch (error) {
-        alert('保存に失敗しました');
+        alert('保存に失敗しました: ' + error.message);
+        console.error('学習ログ保存エラー:', error);
       }
     });
 
@@ -823,6 +898,13 @@
 
     // 初期化 (ページロード時に一度だけ実行)
     (async () => {
+      // ページロード時にトークンがない場合、ダッシュボードにリダイレクト
+      if (!localStorage.getItem('jwt_token')) {
+          console.warn("認証トークンが見つかりません。ダッシュボードにリダイレクトします。");
+          alert("ログインが必要です。ダッシュボードに戻ります。");
+          window.location.href = 'dashboard.html';
+          return;
+      }
       await loadStudyItems();
       await loadLogs();
     })();
