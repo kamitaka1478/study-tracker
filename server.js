@@ -1,3 +1,11 @@
+require('dotenv').config();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const express = require('express');
 const fs = require('fs-extra');
 const path = require('path');
@@ -99,6 +107,73 @@ app.get('/api-info', (req, res) => {
       'GET /stats': '学習統計取得'
     }
   });
+});
+
+// === ユーザー認証 関連のAPI ===
+
+// ユーザー登録
+app.post('/auth/register', async (req, res) => {
+  const { email, username, password } = req.body;
+  if (!email || !username || !password) {
+    return res.status(400).json({ message: '全て必須です' });
+  }
+  try {
+    // メール重複チェック
+    const exists = await pool.query('SELECT 1 FROM users WHERE email = \$1', [email]);
+    if (exists.rowCount > 0) {
+      return res.status(409).json({ message: 'このメールアドレスは既に登録されています' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      'INSERT INTO users (email, username, password_hash) VALUES (\$1, \$2, \$3) RETURNING id, email, username, created_at',
+      [email, username, hash]
+    );
+    res.status(201).json({ user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: 'サーバーエラー' });
+  }
+});
+
+// ログイン
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: '全て必須です' });
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE email = \$1', [email]);
+    if (result.rowCount === 0) return res.status(401).json({ message: '認証失敗' });
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ message: '認証失敗' });
+    // JWT発行
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { id: user.id, email: user.email, username: user.username } });
+  } catch (err) {
+    res.status(500).json({ message: 'サーバーエラー' });
+  }
+});
+
+// 認証ミドルウェア
+function authMiddleware(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ message: '認証が必要です' });
+  try {
+    const payload = jwt.verify(auth.split(' ')[1], JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch {
+    res.status(401).json({ message: 'トークンが無効です' });
+  }
+}
+
+// ログイン中ユーザー情報取得
+app.get('/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, username, created_at FROM users WHERE id = \$1', [req.user.userId]);
+    if (result.rowCount === 0) return res.status(404).json({ message: 'ユーザーが見つかりません' });
+    res.json({ user: result.rows[0] });
+  } catch {
+    res.status(500).json({ message: 'サーバーエラー' });
+  }
 });
 
 

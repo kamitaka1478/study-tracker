@@ -1,0 +1,12 @@
+-- 拡張機能（UUID生成用）がなければ有効化
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- usersテーブル作成
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  username VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
