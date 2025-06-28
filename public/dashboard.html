@@ -492,20 +492,40 @@
     // APIのベースURL
     const API_BASE_URL = 'http://localhost:3000'; // サーバーのポートに合わせてください
 
-    // カウントダウン機能
+    // カウントダウン機能の関数を定義
     function updateCountdown() {
-      const examDate = new Date('2025-10-12'); // 試験日を設定
+      const examDate = new Date('2025-10-12T00:00:00'); // 試験日をUTCの午前0時に設定（任意）
+      // または、より正確に日本のタイムゾーンで午前0時を設定する場合：
+      // const examDate = new Date('2025-10-12T00:00:00+09:00'); 
       const now = new Date();
       const timeDiff = examDate - now;
+
+      // もしカウントダウンが0以下になったら処理を停止
+      if (timeDiff <= 0) {
+        document.getElementById('days-left').textContent = 0;
+        document.getElementById('hours-left').textContent = 0;
+        document.getElementById('minutes-left').textContent = 0;
+        // 必要であれば、カウントダウン終了のメッセージを表示することもできます
+        clearInterval(countdownInterval); // カウントダウンを停止
+        return; // 関数を終了
+      }
       
       const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       document.getElementById('days-left').textContent = days;
       document.getElementById('hours-left').textContent = hours;
       document.getElementById('minutes-left').textContent = minutes;
     }
+
+    // ページが読み込まれたら、まず一度カウントダウンを更新
+    updateCountdown();
+
+    // 1分（60000ミリ秒）ごとにupdateCountdown関数を呼び出す
+    // もし秒単位で表示したい場合は、1000ミリ秒にする
+    const countdownInterval = setInterval(updateCountdown, 60000); 
+
 
     // AIエージェントのメッセージを動的に変更
     const agentMessages = [
