@@ -1,68 +1,92 @@
-<<<<<<< HEAD
-require('dotenv').config();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const JWT_SECRET = process.env.JWT_SECRET;
-
-=======
-// server.js
-require('dotenv').config();
->>>>>>> 60999f30259f64d60ff763ef528e7a1a609fd47b
 const express = require('express');
+const fs = require('fs-extra');
 const path = require('path');
-
-// ユーティリティのインポート
-const { initializeDataDirectory } = require('./src/utils/fileUtils');
-
-// ルートのインポート
-const studyItemsRoutes = require('./src/routes/studyItems');
-const logsRoutes = require('./src/routes/logs');
-const statsRoutes = require('./src/routes/stats');
-
-// ミドルウェアのインポート
-const errorHandler = require('./src/middleware/errorHandler');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// ミドルウェア設定
+// ミドルウェア
 app.use(express.json());
+// publicディレクトリを静的ファイルとして提供します。
+// これにより、public/dashboard.html や public/study_management.html に直接アクセスできるようになります。
 app.use(express.static('public'));
 
-// CORS設定（開発環境用）
-if (NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-    } else {
-      next();
+// CORS対応（開発環境用）
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// ファイルパス
+const DATA_DIR = './data';
+const STUDY_ITEMS_FILE = path.join(DATA_DIR, 'studyItems.json');
+const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
+
+// 初期化：dataディレクトリとJSONファイルを作成
+async function initializeData() {
+  try {
+    // dataディレクトリを作成
+    await fs.ensureDir(DATA_DIR);
+    
+    // studyItems.jsonが存在しない場合は作成
+    if (!await fs.pathExists(STUDY_ITEMS_FILE)) {
+      await fs.writeJson(STUDY_ITEMS_FILE, [], { spaces: 2 });
+      console.log('📁 studyItems.json を作成しました');
     }
-  });
+    
+    // logs.jsonが存在しない場合は作成
+    if (!await fs.pathExists(LOGS_FILE)) {
+      await fs.writeJson(LOGS_FILE, [], { spaces: 2 });
+      console.log('📁 logs.json を作成しました');
+    }
+    
+    console.log('✅ データファイルの初期化完了');
+  } catch (error) {
+    console.error('❌ データファイル初期化エラー:', error);
+  }
 }
 
-// ルート設定
-app.use('/study-items', studyItemsRoutes);
-app.use('/logs', logsRoutes);
-app.use('/stats', statsRoutes);
+// JSONファイルを安全に読み込む関数
+async function readJsonFile(filePath) {
+  try {
+    const data = await fs.readJson(filePath);
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error(`JSONファイル読み込みエラー (${filePath}):`, error);
+    return [];
+  }
+}
 
-// ルートパス
+// JSONファイルに安全に書き込む関数
+async function writeJsonFile(filePath, data) {
+  try {
+    await fs.writeJson(filePath, data, { spaces: 2 });
+    return true;
+  } catch (error) {
+    console.error(`JSONファイル書き込みエラー (${filePath}):`, error);
+    return false;
+  }
+}
+
+// ルートハンドラー
+// ブラウザからのルートURL (http://localhost:3000/) へのリクエストに対して、
+// dashboard.html ファイルを返すように変更します。
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// API情報エンドポイント
+// API情報エンドポイント (デバッグ用) - 必要であれば残す
 app.get('/api-info', (req, res) => {
   res.json({
     message: '📚 学習記録アプリAPI',
     status: 'running',
-    environment: NODE_ENV,
     endpoints: {
       'GET /study-items': '学習項目一覧取得',
       'POST /study-items': '学習項目追加',
@@ -75,74 +99,6 @@ app.get('/api-info', (req, res) => {
       'GET /stats': '学習統計取得'
     }
   });
-});
-
-<<<<<<< HEAD
-// === ユーザー認証 関連のAPI ===
-
-// ユーザー登録
-app.post('/auth/register', async (req, res) => {
-  const { email, username, password } = req.body;
-  if (!email || !username || !password) {
-    return res.status(400).json({ message: '全て必須です' });
-  }
-  try {
-    // メール重複チェック
-    const exists = await pool.query('SELECT 1 FROM users WHERE email = \$1', [email]);
-    if (exists.rowCount > 0) {
-      return res.status(409).json({ message: 'このメールアドレスは既に登録されています' });
-    }
-    const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      'INSERT INTO users (email, username, password_hash) VALUES (\$1, \$2, \$3) RETURNING id, email, username, created_at',
-      [email, username, hash]
-    );
-    res.status(201).json({ user: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ message: 'サーバーエラー' });
-  }
-});
-
-// ログイン
-app.post('/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: '全て必須です' });
-  try {
-    const result = await pool.query('SELECT * FROM users WHERE email = \$1', [email]);
-    if (result.rowCount === 0) return res.status(401).json({ message: '認証失敗' });
-    const user = result.rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ message: '認証失敗' });
-    // JWT発行
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, username: user.username } });
-  } catch (err) {
-    res.status(500).json({ message: 'サーバーエラー' });
-  }
-});
-
-// 認証ミドルウェア
-function authMiddleware(req, res, next) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ message: '認証が必要です' });
-  try {
-    const payload = jwt.verify(auth.split(' ')[1], JWT_SECRET);
-    req.user = payload;
-    next();
-  } catch {
-    res.status(401).json({ message: 'トークンが無効です' });
-  }
-}
-
-// ログイン中ユーザー情報取得
-app.get('/auth/me', authMiddleware, async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, email, username, created_at FROM users WHERE id = \$1', [req.user.userId]);
-    if (result.rowCount === 0) return res.status(404).json({ message: 'ユーザーが見つかりません' });
-    res.json({ user: result.rows[0] });
-  } catch {
-    res.status(500).json({ message: 'サーバーエラー' });
-  }
 });
 
 
@@ -691,8 +647,6 @@ app.get('/stats', async (req, res) => {
 });
 
 
-=======
->>>>>>> 60999f30259f64d60ff763ef528e7a1a609fd47b
 // 404ハンドラー
 app.use((req, res) => {
   res.status(404).json({
@@ -702,28 +656,28 @@ app.use((req, res) => {
   });
 });
 
-// エラーハンドリング（最後に配置）
-app.use(errorHandler);
+// エラーハンドラー
+app.use((error, req, res, next) => {
+  console.error('サーバーエラー:', error);
+  res.status(500).json({
+    success: false,
+    message: 'サーバー内部エラーが発生しました'
+  });
+});
 
 // サーバー起動
 async function startServer() {
-  try {
-    await initializeDataDirectory();
-    
-    app.listen(PORT, () => {
-      console.log('');
-      console.log('🚀 ====================================');
-      console.log(`📚 学習記録アプリサーバーが起動しました`);
-      console.log(`🌐 URL: http://localhost:${PORT}`);
-      console.log(`🔧 環境: ${NODE_ENV}`);
-      console.log(`📊 API Info: http://localhost:${PORT}/api-info`);
-      console.log('🚀 ====================================');
-      console.log('');
-    });
-  } catch (error) {
-    console.error('❌ サーバー起動エラー:', error);
-    process.exit(1);
-  }
+  await initializeData();
+  
+  app.listen(PORT, () => {
+    console.log('');
+    console.log('🚀 ====================================');
+    console.log(`📚 学習記録アプリサーバーが起動しました`);
+    console.log(`🌐 URL: http://localhost:${PORT}`);
+    console.log(`📊 API Info: http://localhost:${PORT}/api-info`); // API情報のエンドポイント名を変更
+    console.log('🚀 ====================================');
+    console.log('');
+  });
 }
 
 // プロセス終了時の処理
@@ -738,4 +692,7 @@ process.on('SIGTERM', () => {
 });
 
 // サーバー起動
-startServer();
+startServer().catch(error => {
+  console.error('❌ サーバー起動エラー:', error);
+  process.exit(1);
+});
