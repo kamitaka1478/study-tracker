@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -7,10 +6,6 @@ const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const JWT_SECRET = process.env.JWT_SECRET;
 
-=======
-// server.js
-require('dotenv').config();
->>>>>>> 60999f30259f64d60ff763ef528e7a1a609fd47b
 const express = require('express');
 const path = require('path');
 
@@ -77,7 +72,6 @@ app.get('/api-info', (req, res) => {
   });
 });
 
-<<<<<<< HEAD
 // === ユーザー認証 関連のAPI ===
 
 // ユーザー登録
@@ -691,8 +685,6 @@ app.get('/stats', async (req, res) => {
 });
 
 
-=======
->>>>>>> 60999f30259f64d60ff763ef528e7a1a609fd47b
 // 404ハンドラー
 app.use((req, res) => {
   res.status(404).json({
