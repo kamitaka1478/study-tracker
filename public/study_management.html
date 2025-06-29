@@ -552,45 +552,79 @@
       }
     }
 
+    // 日付をローカルタイムゾーンで正しく処理する関数
+    function formatDateForDisplay(dateString) {
+      if (!dateString) return '';
+      
+      // ISO形式の日付をDateオブジェクトに変換
+      const date = new Date(dateString);
+      
+      // ローカルタイムゾーンでの日付を取得
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    }
+
+    // UTCの日付文字列から日付部分のみを取得する関数
+    function extractDateOnly(dateString) {
+      if (!dateString) return '';
+      
+      // "2025-06-27T15:00:00.000Z" から "2025-06-27" を取得
+      // ただし、タイムゾーンの影響を考慮
+      if (dateString.includes('T15:00:00.000Z')) {
+        // 日本時間の午前0時がUTCの前日15時として保存されている場合
+        const date = new Date(dateString);
+        // 9時間追加して日本時間に変換
+        date.setHours(date.getHours() + 9);
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+      }
+      
+      // その他の場合は単純に日付部分を取得
+      return dateString.split('T')[0];
+    }
+
+
     function updateLogsDisplay() {
       const list = document.getElementById('log-list');
-      list.innerHTML = ''; 
+      list.innerHTML = '';
 
-      let currentLogs = logs; // グローバル変数 logs を使う
+      let currentLogs = logs;
 
-      // ログが配列であることを確認してからソートとforEachを呼び出す
       if (Array.isArray(currentLogs)) {
-        // ログを日付と作成時刻でソート（新しい日付が上、同じ日付内では新しい時間が上）
+        // ログを日付と作成時刻でソート
         currentLogs.sort((a, b) => {
-          // createdAtが存在しない場合や無効な場合は、dateのみを使用
-          const dateA = new Date(a.createdAt || a.date);
-          const dateB = new Date(b.createdAt || b.date);
+          const dateA = new Date(a.createdAt || a.created_at || a.date);
+          const dateB = new Date(b.createdAt || b.created_at || b.date);
           
-          // 日付でソート
           const dateCompare = dateB - dateA;
           if (dateCompare !== 0) return dateCompare;
 
-          // 同じ日付の場合、createdAtでソート（より新しいものが上）
-          // createdAtが両方とも存在しない場合は順序を維持
-          if (a.createdAt && b.createdAt) {
-            return new Date(b.createdAt) - new Date(a.createdAt);
+          if ((a.createdAt || a.created_at) && (b.createdAt || b.created_at)) {
+            return new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at);
           }
-          return 0; 
+          return 0;
         });
 
         let currentDate = '';
         let dailyTotalMinutes = 0;
 
         currentLogs.forEach((log, index) => {
-          const logDate = log.date; 
+          // 日付の取得（ISO形式から yyyy-MM-dd に変換）
+          const logDate = log.date.split('T')[0];
 
-          // 日付が変わったら、前日の合計時間を表示（初回以外）
           if (logDate !== currentDate) {
             if (currentDate !== '') {
               const dailyHours = Math.floor(dailyTotalMinutes / 60);
               const dailyMinutes = dailyTotalMinutes % 60;
               const dailyTotalDiv = document.createElement('div');
-              dailyTotalDiv.className = 'daily-summary'; 
+              dailyTotalDiv.className = 'daily-summary';
               dailyTotalDiv.innerHTML = `
                 ${currentDate}の合計学習時間: ${dailyHours}時間${dailyMinutes}分
               `;
@@ -598,21 +632,25 @@
             }
             const dateHeader = document.createElement('h3');
             dateHeader.textContent = logDate;
-            dateHeader.className = 'log-date-header'; 
+            dateHeader.className = 'log-date-header';
             list.appendChild(dateHeader);
             currentDate = logDate;
-            dailyTotalMinutes = 0; 
+            dailyTotalMinutes = 0;
           }
 
           dailyTotalMinutes += parseInt(log.duration);
 
           const li = document.createElement('li');
-          const studyItem = studyItems.find(item => item.id === log.studyItemId);
+          
+          // プロパティ名の違いに対応（study_item_id と studyItemId の両方をチェック）
+          const studyItemId = log.studyItemId || log.study_item_id;
+          const studyItem = studyItems.find(item => String(item.id) === String(studyItemId));
           const itemName = studyItem ? studyItem.name : '不明な項目';
 
-          // createdAtが存在しない場合でもエラーにならないように修正
-          const displayTime = log.createdAt ? log.createdAt.substring(11, 16) : ''; // HH:MM形式
-          const displayDateAndTime = `${log.date} ${displayTime}`.trim(); // スペースの調整
+          // 時刻の取得（created_at と createdAt の両方に対応）
+          const createdAt = log.createdAt || log.created_at;
+          const displayTime = createdAt ? createdAt.substring(11, 16) : '';
+          const displayDateAndTime = `${logDate} ${displayTime}`.trim();
 
           li.innerHTML = `
             <div class="item-info">
@@ -641,28 +679,31 @@
             list.appendChild(dailyTotalDiv);
           }
         });
-      } else {
-          console.error("logs は配列ではありません。", logs);
       }
 
       attachLogEventListeners();
     }
 
+
     function attachLogEventListeners() {
+      // 削除ボタン（既存のコード）
       document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', async () => {
           if (confirm('本当に削除しますか？')) {
             const id = button.getAttribute('data-id');
             try {
               const headers = getAuthHeaders();
-              if (!headers['Authorization']) { return; } // トークンがなければ処理しない
+              if (!headers['Authorization']) { return; }
 
-              const res = await fetch(`${API_BASE_URL}/logs/${id}`, { method: 'DELETE', headers: headers });
+              const res = await fetch(`${API_BASE_URL}/logs/${id}`, { 
+                method: 'DELETE', 
+                headers: headers 
+              });
               if (!res.ok) {
-                  const errorData = await res.json();
-                  throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
+                const errorData = await res.json();
+                throw new Error(`APIエラー (${res.status}): ${errorData.message}`);
               }
-              await loadLogs(); 
+              await loadLogs();
             } catch (error) {
               alert('削除に失敗しました: ' + error.message);
               console.error('学習ログ削除エラー:', error);
@@ -671,38 +712,84 @@
         });
       });
 
+      // 編集ボタン
       document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', () => {
           const id = button.getAttribute('data-id');
-          const log = logs.find(l => l.id === id); 
+          const log = logs.find(l => String(l.id) === String(id));
 
           if (log) {
+            console.log('編集対象ログ:', log);
+            
+            // フォームをリセット
+            document.getElementById('log-form').reset();
+            
+            // 各フィールドに値を設定
             document.getElementById('logId').value = log.id;
-            document.getElementById('studyItemId').value = log.studyItemId;
-            document.getElementById('date').value = log.date;
+            
+            const studyItemId = log.studyItemId || log.study_item_id;
+            document.getElementById('studyItemId').value = studyItemId;
+            
+            // 日付の設定
+            if (log.date) {
+              const dateValue = log.date.substring(0, 10); // より確実な方法
+              document.getElementById('date').value = dateValue;
+            }
+            
             document.getElementById('content').value = log.content;
             document.getElementById('duration').value = log.duration;
             document.getElementById('memo').value = log.memo || '';
-            document.getElementById('tags').value = log.tags.join(',');
+            
+            // タグの処理
+            document.getElementById('tags').value = parseTagsValue(log.tags);
+            
             document.getElementById('log-submit-btn').textContent = '学習ログを更新';
 
-            document.getElementById('log-form').scrollIntoView({
-              behavior: 'smooth'
-            });
+            // フォームまでスクロール
+            setTimeout(() => {
+              document.getElementById('log-form').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }, 100);
           }
         });
       });
     }
 
+    // タグ処理用のヘルパー関数
+    function parseTagsValue(tags) {
+      if (!tags) return '';
+      
+      if (Array.isArray(tags)) {
+        return tags.join(',');
+      }
+      
+      if (typeof tags === 'string') {
+        const trimmed = tags.trim();
+        if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+          const content = trimmed.slice(1, -1);
+          const items = content.split(',').map(item => {
+            return item.trim().replace(/^['"]|['"]$/g, '');
+          });
+          return items.filter(item => item).join(',');
+        }
+        return tags;
+      }
+      
+      return '';
+    }
+
+
     function attachStudyItemEventListeners() {
-      // 削除ボタン
+      // 削除ボタン（既存のコード）
       document.querySelectorAll('.delete-item-btn').forEach(button => {
         button.addEventListener('click', async () => {
           if (confirm('この学習項目を本当に削除しますか？\nこの項目に関連する学習ログは削除されません。')) {
             const id = button.getAttribute('data-id');
             try {
               const headers = getAuthHeaders();
-              if (!headers['Authorization']) { return; } // トークンがなければ処理しない
+              if (!headers['Authorization']) { return; }
 
               const res = await fetch(`${API_BASE_URL}/study-items/${id}`, {
                 method: 'DELETE',
@@ -710,8 +797,8 @@
               });
               if (res.ok) {
                 alert('学習項目を削除しました！');
-                await loadStudyItems(); 
-                await loadLogs(); 
+                await loadStudyItems();
+                await loadLogs();
               } else {
                 const errorData = await res.json();
                 alert(`削除に失敗しました: ${errorData.message}`);
@@ -724,28 +811,50 @@
         });
       });
 
-      // 編集ボタン
+      // 編集ボタン - 修正版
       document.querySelectorAll('.edit-item-btn').forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', (e) => {
+          e.preventDefault(); // デフォルトの動作を防ぐ
+          
           const id = button.getAttribute('data-id');
-          const itemToEdit = studyItems.find(item => item.id === id);
+          console.log('学習項目編集クリック - ID:', id);
+          
+          const itemToEdit = studyItems.find(item => String(item.id) === String(id));
+          console.log('編集対象:', itemToEdit);
 
           if (itemToEdit) {
+            // フォームに値を設定
             document.getElementById('studyItemIdForEdit').value = itemToEdit.id;
             document.getElementById('itemName').value = itemToEdit.name;
             document.getElementById('itemCategory').value = itemToEdit.category;
 
-            document.querySelector('#study-item-form button[type="submit"]').textContent = '学習項目を更新';
+            // ボタンテキストを変更
+            const submitBtn = document.querySelector('#study-item-form button[type="submit"]');
+            if (submitBtn) {
+              submitBtn.textContent = '学習項目を更新';
+            }
 
-            document.getElementById('cancelStudyItemEdit').classList.remove('hidden');
+            // キャンセルボタンを表示
+            const cancelBtn = document.getElementById('cancelStudyItemEdit');
+            if (cancelBtn) {
+              cancelBtn.classList.remove('hidden');
+            }
 
+            // フォームまでスクロール
             document.getElementById('study-item-form').scrollIntoView({
-              behavior: 'smooth'
+              behavior: 'smooth',
+              block: 'start'
             });
+
+            // フォームの最初のフィールドにフォーカス
+            document.getElementById('itemName').focus();
+          } else {
+            alert('編集対象の項目が見つかりません。ページを再読み込みしてください。');
           }
         });
       });
     }
+
 
     function updateStats() {
       document.getElementById('totalItems').textContent = studyItems.length;

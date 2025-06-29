@@ -1,10 +1,35 @@
+const express = require('express');
+const path = require('path'); //pathモジュールをインポート
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// 環境変数の読み込み
 require('dotenv').config();
+
+// 必要なモジュールのインポート
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 
-const express = require('express');
-const path = require('path');
+// デバッグ用: 静的ファイルのリクエストをログ出力
+app.use((req, res, next) => {
+    if (req.url.endsWith('.js') || req.url.endsWith('.html')) {
+        console.log('Static file request:', req.url);
+    }
+    next();
+});
+
+// ★★★ ここから追加・修正する部分 ★★★
+// 静的ファイルを提供する設定
+// 'public' フォルダがある場合（推奨される構成）
+// app.use(express.static(path.join(__dirname, 'public')));
+
+// もしHTMLファイルが直接プロジェクトルートにある場合 (現在の状況に合わせる)
+// あなたの study-tracker ディレクトリの直下に dashboard.html や auth.js があるなら、
+// 以下のように設定します。
+app.use(express.static(path.join(__dirname))); 
+// または、特定のフォルダにフロントエンドファイルを置いている場合は
+// app.use(express.static(path.join(__dirname, 'frontend_folder_name')));
+// ★★★ ここまで ★★★
 
 // ユーティリティのインポートは不要になります (readJsonFile/writeJsonFileを使わないため)
 // const { initializeDataDirectory } = require('./src/utils/fileUtils');
@@ -17,10 +42,8 @@ const path = require('path');
 // ミドルウェアのインポート
 const errorHandler = require('./src/middleware/errorHandler');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-
+const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const JWT_SECRET = process.env.JWT_SECRET;
 
