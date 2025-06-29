@@ -67,7 +67,7 @@ if (NODE_ENV === 'development') {
 
 // ルートパス
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // API情報エンドポイント

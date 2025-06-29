@@ -438,9 +438,6 @@
     let studyItems = [];
     let logs = []; // グローバル変数 logs を定義
 
-    // 今日の日付をデフォルトに設定
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
-
     // --- 認証トークン取得ヘルパー関数 ---
     function getAuthHeaders() {
         const token = localStorage.getItem('jwt_token');
@@ -552,44 +549,13 @@
       }
     }
 
-    // 日付をローカルタイムゾーンで正しく処理する関数
-    function formatDateForDisplay(dateString) {
-      if (!dateString) return '';
-      
-      // ISO形式の日付をDateオブジェクトに変換
-      const date = new Date(dateString);
-      
-      // ローカルタイムゾーンでの日付を取得
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      
-      return `${year}-${month}-${day}`;
+    // UTCの日付文字列をJSTの日付文字列に変換する関数
+    function toJSTDateString(dateStr) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        const date = new Date(dateStr);
+        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+        return jst.toISOString().split('T')[0];
     }
-
-    // UTCの日付文字列から日付部分のみを取得する関数
-    function extractDateOnly(dateString) {
-      if (!dateString) return '';
-      
-      // "2025-06-27T15:00:00.000Z" から "2025-06-27" を取得
-      // ただし、タイムゾーンの影響を考慮
-      if (dateString.includes('T15:00:00.000Z')) {
-        // 日本時間の午前0時がUTCの前日15時として保存されている場合
-        const date = new Date(dateString);
-        // 9時間追加して日本時間に変換
-        date.setHours(date.getHours() + 9);
-        
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        
-        return `${year}-${month}-${day}`;
-      }
-      
-      // その他の場合は単純に日付部分を取得
-      return dateString.split('T')[0];
-    }
-
 
     function updateLogsDisplay() {
       const list = document.getElementById('log-list');
@@ -617,7 +583,7 @@
 
         currentLogs.forEach((log, index) => {
           // 日付の取得（ISO形式から yyyy-MM-dd に変換）
-          const logDate = log.date.split('T')[0];
+          const logDate = toJSTDateString(log.date).split('T')[0];
 
           if (logDate !== currentDate) {
             if (currentDate !== '') {
@@ -658,7 +624,7 @@
               📖 ${log.content}<br>
               ${log.memo ? `💭 ${log.memo}<br>` : ''}
               ${log.tags && log.tags.length > 0 ? `🏷️ ${log.tags.join(', ')}<br>` : ''}
-              <small>${displayDateAndTime}</small>
+              <small>${logDate}</small>
             </div>
             <div class="item-actions">
               <button class="btn-edit edit-btn" data-id="${log.id}">✏️ 編集</button>
@@ -732,7 +698,7 @@
             
             // 日付の設定
             if (log.date) {
-              const dateValue = log.date.substring(0, 10); // より確実な方法
+              const dateValue = toJSTDateString(log.date).substring(0, 10); // より確実な方法
               document.getElementById('date').value = dateValue;
             }
             
