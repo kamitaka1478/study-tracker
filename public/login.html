@@ -216,9 +216,20 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    // トークンキー名を統一
-                    localStorage.setItem('token', data.token);
-                    console.log('ログイン成功:', data.user);
+                    const token = data.token; // これが正しく動いていることを確認済み
+
+                    localStorage.setItem('token', token); 
+
+                    // ★ここを修正！ 'user' 変数を削除するか、適切なデータに置き換える
+                    // 例1: 単にログイン成功だけ表示
+                    console.log('ログイン成功！'); 
+                    
+                    // 例2: もしサーバーがユーザー名を返しているなら
+                    // console.log('ログイン成功:', data.username); 
+
+                    // 例3: ユーザーオブジェクト全体をログに出す
+                    // console.log('ログイン成功:', data.user); // サーバーレスポンスに user オブジェクトが含まれている場合
+
                     window.location.href = 'dashboard.html';
                 } else {
                     const errorData = await response.json();

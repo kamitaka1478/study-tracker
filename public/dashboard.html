@@ -393,19 +393,19 @@
       <!-- 試験までのカウントダウン -->
       <div class="countdown-container">
         <div class="countdown-item">
-          <span class="countdown-number" id="days-left">0</span>
+          <span class="countdown-number" id="daysLeft">0</span>
           <span class="countdown-label">日</span>
         </div>
         <div class="countdown-item">
-          <span class="countdown-number" id="hours-left">0</span>
+          <span class="countdown-number" id="hoursLeft">0</span>
           <span class="countdown-label">時間</span>
         </div>
         <div class="countdown-item">
-          <span class="countdown-number" id="minutes-left">0</span>
+          <span class="countdown-number" id="minutesLeft">0</span>
           <span class="countdown-label">分</span>
         </div>
         <div class="countdown-item">
-          <span class="countdown-number" id="study-streak">0</span>
+          <span class="countdown-number" id="studyStreak">0</span>
           <span class="countdown-label">日連続学習</span>
         </div>
       </div>
@@ -414,10 +414,10 @@
     <!-- AIエージェント -->
     <div class="motivational-agent">
       <div class="agent-avatar">🤖</div>
-      <div class="agent-message" id="agent-message">
+      <div class="agent-message" id="agentMessage">
         <!-- AIエージェントのメッセージがここに表示されます -->
       </div>
-      <div class="agent-tips" id="agent-tips">
+      <div class="agent-tips" id="agentTips">
         <!-- AIエージェントのヒントがここに表示されます -->
       </div>
     </div>
@@ -471,7 +471,7 @@
     <!-- 学習分野 -->
     <div class="glass-card">
       <h2 style="color: white; margin-bottom: 25px; font-size: 1.8rem;">📚 学習分野別進捗</h2>
-      <div class="study-categories" id="study-categories-container">
+      <div class="study-categories" id="studyCategoriesContainer">
         <!-- 学習分野のカードがここに動的に追加されます -->
       </div>
     </div>
@@ -480,10 +480,10 @@
     <div class="glass-card">
       <div class="quick-actions">
         <!-- 学習記録を追加ボタンが study_management.html にリンクするように変更 -->
-        <button class="action-btn" id="add-log-btn" onclick="window.location.href='study_management.html'">📝 学習記録を追加</button>
-        <button class="action-btn" id="past-questions-btn">📊 過去問に挑戦</button>
-        <button class="action-btn" id="weakness-analysis-btn">🎯 弱点分析</button>
-        <button class="action-btn" id="review-plan-btn">📈 学習計画を見直す</button>
+        <button class="action-btn" id="addLogBtn" onclick="window.location.href='study_management.html'">📝 学習記録を追加</button>
+        <button class="action-btn" id="pastQuestionsBtn">📊 過去問に挑戦</button>
+        <button class="action-btn" id="weaknessAnalysisBtn">🎯 弱点分析</button>
+        <button class="action-btn" id="reviewPlanBtn">📈 学習計画を見直す</button>
       </div>
     </div>
   </div>
@@ -503,9 +503,9 @@
 
       // もしカウントダウンが0以下になったら処理を停止
       if (timeDiff <= 0) {
-        document.getElementById('days-left').textContent = 0;
-        document.getElementById('hours-left').textContent = 0;
-        document.getElementById('minutes-left').textContent = 0;
+        document.getElementById('daysLeft').textContent = 0;
+        document.getElementById('hoursLeft').textContent = 0;
+        document.getElementById('minutesLeft').textContent = 0;
         // 必要であれば、カウントダウン終了のメッセージを表示することもできます
         clearInterval(countdownInterval); // カウントダウンを停止
         return; // 関数を終了
@@ -515,9 +515,9 @@
       const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
 
-      document.getElementById('days-left').textContent = days;
-      document.getElementById('hours-left').textContent = hours;
-      document.getElementById('minutes-left').textContent = minutes;
+      document.getElementById('daysLeft').textContent = days;
+      document.getElementById('hoursLeft').textContent = hours;
+      document.getElementById('minutesLeft').textContent = minutes;
     }
 
     // ページが読み込まれたら、まず一度カウントダウンを更新
@@ -547,135 +547,65 @@
 
     function updateAgentMessage() {
       const currentMessage = agentMessages[messageIndex];
-      document.getElementById('agent-message').textContent = currentMessage.message;
-      document.getElementById('agent-tips').textContent = currentMessage.tip;
+      document.getElementById('agentMessage').textContent = currentMessage.message;
+      document.getElementById('agentTips').textContent = currentMessage.tip;
       messageIndex = (messageIndex + 1) % agentMessages.length;
     }
 
     // APIから統計情報を取得してUIを更新する関数
     async function fetchStats() {
-      try {
-        // 認証ヘッダーを取得
-        const headers = getAuthHeaders();
-        // トークンがない場合（ログインしていない場合）はAPIリクエストを行わない
-        if (!headers['Authorization']) {
+        const totalItemsSpan = document.getElementById('totalItems');
+        const totalTimeSpan = document.getElementById('totalTime');
+        const studyStreakSpan = document.getElementById('studyStreak');
+        const statsErrorMessage = document.getElementById('statsErrorMessage'); // 新しく追加
+
+        // エラーメッセージを初期化
+        if (statsErrorMessage) {
+            statsErrorMessage.textContent = '';
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
             console.warn('統計情報の取得をスキップ: 認証トークンがありません。');
-            // UIをデフォルト値またはエラーメッセージで更新
-            document.getElementById('study-streak').textContent = 'N/A';
-            document.getElementById('totalItems').textContent = 'N/A'; // もしあれば
-            document.getElementById('totalLogs').textContent = 'N/A'; // もしあれば
-            document.getElementById('totalTime').textContent = 'N/A'; // もしあれば
-            document.getElementById('study-categories-container').innerHTML = '<p style="color: white; text-align: center;">ログインして統計情報を表示してください。</p>';
-            return; // 以降の処理を中断
+            // トークンがない場合は、表示要素をデフォルト値にリセット
+            if (totalItemsSpan) totalItemsSpan.textContent = '0';
+            if (totalTimeSpan) totalTimeSpan.textContent = '0分';
+            if (studyStreakSpan) studyStreakSpan.textContent = '0日間';
+            if (statsErrorMessage) statsErrorMessage.textContent = 'ログインして統計情報を表示してください。';
+            return;
         }
 
-        // fetchリクエストに認証ヘッダーを含める
-        const response = await fetch(`${API_BASE_URL}/stats`, {
-          headers: headers // ここで取得した認証ヘッダーを渡す
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        if (!response.ok) {
-          // HTTPエラーが発生した場合、詳細なメッセージをログに出力
-          const errorText = await response.text(); // エラーレスポンスのボディを取得
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`APIエラー: ${errorData.message || '統計情報の取得に失敗しました'}`);
+            }
+
+            const stats = await response.json();
+
+            // ★ここで null チェックを追加する！
+            if (totalItemsSpan) totalItemsSpan.textContent = stats.totalItems;
+            if (totalTimeSpan) totalTimeSpan.textContent = `${stats.totalTime}分 (${stats.totalHours}時間)`;
+            if (studyStreakSpan) studyStreakSpan.textContent = `${stats.studyStreak}日間連続`;
+
+            // categoryStats も同様に処理
+
+        } catch (error) {
+            console.error('統計情報の取得に失敗しました:', error);
+            if (statsErrorMessage) {
+                statsErrorMessage.textContent = `統計情報の取得に失敗しました: ${error.message}`;
+            }
+            // エラー時も要素をデフォルト値にリセット
+            if (totalItemsSpan) totalItemsSpan.textContent = 'エラー';
+            if (totalTimeSpan) totalTimeSpan.textContent = 'エラー';
+            if (studyStreakSpan) studyStreakSpan.textContent = 'エラー';
         }
-
-        const stats = await response.json();
-        console.log('取得した統計情報:', stats);
-
-        // 学習連続日数を更新
-        document.getElementById('study-streak').textContent = stats.studyStreak;
-
-        // もしあれば、その他の総統計情報を更新
-        // (dashboard.htmlの構造に合わせて適宜追加・修正してください)
-        // 例:
-        if (document.getElementById('totalItems')) {
-            document.getElementById('totalItems').textContent = stats.totalItems || 0;
-        }
-        if (document.getElementById('totalLogs')) {
-            document.getElementById('totalLogs').textContent = stats.totalLogs || 0;
-        }
-        if (document.getElementById('totalTime')) {
-            const totalMinutes = stats.totalTime || 0;
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            document.getElementById('totalTime').textContent = `${totalMinutes}分 （${hours}時間${minutes}分）`;
-        }
-
-
-        // 学習分野別進捗を動的に更新
-        const categoriesContainer = document.getElementById('study-categories-container');
-        categoriesContainer.innerHTML = ''; // 既存のカードをクリア
-
-        // アイコンと色をカテゴリにマッピング
-        const categoryIcons = {
-          'システム開発': { icon: '💻', startColor: '#20b2aa', endColor: '#008080' },
-          'データベース': { icon: '🗄️', startColor: '#48bb78', endColor: '#38a169' },
-          'ネットワーク': { icon: '🌐', startColor: '#f56565', endColor: '#e53e3e' },
-          'セキュリティ': { icon: '🔒', startColor: '#ed8936', endColor: '#dd6b20' },
-          'その他': { icon: '📖', startColor: '#FFD700', endColor: '#FFA500' } // デフォルト/その他のカテゴリ
-        };
-
-        let totalOverallTime = stats.totalTime; // 全体の学習時間 (分)
-
-        // categoryStatsがオブジェクトであることを確認し、キーをソートして処理
-        // stats.categoryStats が null や undefined の場合に備えて空のオブジェクト {} をフォールバック
-        const sortedCategoryNames = Object.keys(stats.categoryStats || {}).sort();
-
-        sortedCategoryNames.forEach(categoryName => {
-          const categoryData = stats.categoryStats[categoryName];
-          const iconData = categoryIcons[categoryName] || categoryIcons['その他']; // マッピングがない場合はその他を使用
-
-          const totalMinutes = categoryData.totalTime;
-          const totalHours = (totalMinutes / 60).toFixed(1); // 時間に変換
-
-          // プログレスバーの計算 (全体の学習時間に対する割合)
-          const progressPercentage = totalOverallTime > 0 ? (totalMinutes / totalOverallTime * 100).toFixed(0) : 0;
-
-          const categoryCardHtml = `
-            <div class="category-card">
-              <div class="category-icon" style="background: linear-gradient(135deg, ${iconData.startColor}, ${iconData.endColor});">
-                ${iconData.icon}
-              </div>
-              <div class="category-title">${categoryName}</div>
-              <div class="category-progress">学習時間: ${totalMinutes}分 (${totalHours}時間)</div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${progressPercentage}%;"></div>
-              </div>
-            </div>
-          `;
-          categoriesContainer.insertAdjacentHTML('beforeend', categoryCardHtml);
-        });
-
-        // プログレスバーのアニメーションを再度適用
-        const progressBars = categoriesContainer.querySelectorAll('.progress-fill');
-        progressBars.forEach(bar => {
-          const width = bar.style.width;
-          bar.style.width = '0%'; // 一度0%にしてからアニメーション
-          setTimeout(() => {
-            bar.style.width = width;
-          }, 100); // 少しディレイを持たせてアニメーション
-        });
-
-      } catch (error) {
-        console.error('統計情報の取得に失敗しました:', error);
-        // エラー時はデフォルト値を表示またはメッセージを表示
-        document.getElementById('study-streak').textContent = 'N/A';
-        // エラーメッセージを表示する場所がdashboard.htmlに存在しない場合、
-        // study-categories-containerに直接メッセージを追加
-        document.getElementById('study-categories-container').innerHTML = '<p style="color: white; text-align: center;">学習統計の読み込みに失敗しました。</p>';
-
-        // 他の統計情報もエラー時にリセット
-        if (document.getElementById('totalItems')) {
-            document.getElementById('totalItems').textContent = 'エラー';
-        }
-        if (document.getElementById('totalLogs')) {
-            document.getElementById('totalLogs').textContent = 'エラー';
-        }
-        if (document.getElementById('totalTime')) {
-            document.getElementById('totalTime').textContent = 'エラー';
-        }
-      }
     }
 
     // 初期化

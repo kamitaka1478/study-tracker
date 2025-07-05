@@ -6,13 +6,16 @@
  */
 function getAuthHeaders() {
     const token = localStorage.getItem('token');
-    if (token) {
-        return {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        };
+    if (!token) {
+        // 通常、この関数内ではリダイレクトせず、呼び出し元で処理します
+        // ただし、study_management.htmlの初期チェックロジックとは別
+        console.error('認証トークンがauth.jsで取得できませんでした。');
+        return {}; // 空のヘッダーを返すか、例外をスロー
     }
-    return { 'Content-Type': 'application/json' };
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
 }
 
 /**
