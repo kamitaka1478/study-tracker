@@ -1,5 +1,6 @@
+// pathモジュールをインポート済みであることを確認
+const path = require('path');
 const express = require('express');
-const path = require('path'); //pathモジュールをインポート
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -18,26 +19,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// ★★★ ここから追加・修正する部分 ★★★
-// 静的ファイルを提供する設定
-// 'public' フォルダがある場合（推奨される構成）
-// app.use(express.static(path.join(__dirname, 'public')));
+// --- ここを修正します！ ---
+// 静的ファイルを提供する設定は、'public' フォルダのみに限定する
+// 現在の 'app.use(express.static(path.join(__dirname)));' を削除し、
+// 'app.use(express.static('public'));' のみを残します。
 
-// もしHTMLファイルが直接プロジェクトルートにある場合 (現在の状況に合わせる)
-// あなたの study-tracker ディレクトリの直下に dashboard.html や auth.js があるなら、
-// 以下のように設定します。
-app.use(express.static(path.join(__dirname))); 
-// または、特定のフォルダにフロントエンドファイルを置いている場合は
-// app.use(express.static(path.join(__dirname, 'frontend_folder_name')));
-// ★★★ ここまで ★★★
+// ミドルウェア設定 (express.json() はそのまま)
+app.use(express.json());
 
-// ユーティリティのインポートは不要になります (readJsonFile/writeJsonFileを使わないため)
-// const { initializeDataDirectory } = require('./src/utils/fileUtils');
-
-// ルートのインポートはそのままですが、内部の実装をDB連携に変更します
-// const studyItemsRoutes = require('./src/routes/studyItems'); // これらは直接server.jsに統合するか、DB対応版を作成
-// const logsRoutes = require('./src/routes/logs'); // これらは直接server.jsに統合するか、DB対応版を作成
-// const statsRoutes = require('./src/routes/stats'); // これらは直接server.jsに統合するか、DB対応版を作成
+// 静的ファイルを提供する設定 (publicフォルダ内のファイルのみを公開)
+// HTML, CSS, クライアントサイドJSなどがここに入る
+app.use(express.static(path.join(__dirname, 'public'))); // ★修正点1: path.joinを使うことでパスがより堅牢に
 
 // ミドルウェアのインポート
 const errorHandler = require('./src/middleware/errorHandler');
@@ -68,6 +60,13 @@ if (NODE_ENV === 'development') {
 // ルートパス
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// dashboard.html への直接アクセスも許可する場合
+// これにより、フロントエンド側で window.location.href = 'dashboard.html' とした場合に
+// public フォルダ内の dashboard.html が表示されるようになります。
+app.get('/dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // API情報エンドポイント
