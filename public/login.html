@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #20b2aa 0%, #008080 100%);
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .login-container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #008080;
+            box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #20b2aa 0%, #008080 100%);
+            color: #f7fafc;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 128, 128, 0.4);
+        }
+
+        .message {
+            margin-top: 20px;
+            color: #e53e3e;
+            font-weight: bold;
+        }
+
+        .form-toggle {
+            margin-top: 20px;
+        }
+
+        .form-toggle a {
+            color: #008080;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .form-toggle a:hover {
+            text-decoration: underline;
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 600px) {
+            .login-container {
+                margin: 20px;
+                padding: 30px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            button {
+                font-size: 16px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 id="formTitle">🔐 ログイン</h1>
+
+        <!-- ログインフォーム -->
+        <form id="loginForm" style="display: block;">
+            <div class="form-group">
+                <label for="loginEmail">メールアドレス:</label>
+                <input type="email" id="loginEmail" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">パスワード:</label>
+                <input type="password" id="loginPassword" required autocomplete="current-password">
+            </div>
+            <button type="submit">ログイン</button>
+            <p class="message" id="loginMessage"></p>
+        </form>
+
+        <!-- 新規登録フォーム（最初は非表示） -->
+        <form id="registerForm" style="display: none;">
+            <div class="form-group">
+                <label for="registerUsername">ユーザー名:</label>
+                <input type="text" id="registerUsername" required autocomplete="new-username">
+            </div>
+            <div class="form-group">
+                <label for="registerEmail">メールアドレス:</label>
+                <input type="email" id="registerEmail" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">パスワード:</label>
+                <input type="password" id="registerPassword" required autocomplete="new-password">
+            </div>
+            <button type="submit">新規登録</button>
+            <p class="message" id="registerMessage"></p>
+        </form>
+
+        <!-- フォーム切り替えリンク -->
+        <div class="form-toggle">
+            <p id="toggleToRegister">アカウントをお持ちでないですか？ <a href="#" onclick="showRegisterForm()">新規登録</a></p>
+            <p id="toggleToLogin" style="display: none;">すでにアカウントをお持ちですか？ <a href="#" onclick="showLoginForm()">ログイン</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        
+        // DOM要素の取得
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const registerMessage = document.getElementById('registerMessage');
+        const formTitle = document.getElementById('formTitle');
+        const toggleToRegister = document.getElementById('toggleToRegister');
+        const toggleToLogin = document.getElementById('toggleToLogin');
+
+        // フォーム切り替え関数
+        function showLoginForm() {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            formTitle.textContent = '🔐 ログイン';
+            toggleToRegister.style.display = 'block';
+            toggleToLogin.style.display = 'none';
+            // メッセージをクリア
+            loginMessage.textContent = '';
+            registerMessage.textContent = '';
+        }
+        
+        function showRegisterForm() {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            formTitle.textContent = '👤 新規登録';
+            toggleToRegister.style.display = 'none';
+            toggleToLogin.style.display = 'block';
+            // メッセージをクリア
+            loginMessage.textContent = '';
+            registerMessage.textContent = '';
+        }
+
+        // ログイン処理
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginMessage.textContent = '';
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // トークンキー名を統一
+                    localStorage.setItem('token', data.token);
+                    console.log('ログイン成功:', data.user);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    const errorData = await response.json();
+                    loginMessage.textContent = `ログイン失敗: ${errorData.message || '不明なエラー'}`;
+                    console.error('ログイン失敗:', response.status, errorData);
+                }
+            } catch (error) {
+                loginMessage.textContent = '通信エラーが発生しました。サーバーが起動しているか確認してください。';
+                console.error('ネットワークエラー:', error);
+            }
+        });
+
+        // 新規登録処理
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            registerMessage.textContent = '';
+
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (response.ok) {
+                    registerMessage.style.color = '#20b2aa';
+                    registerMessage.textContent = '登録が完了しました！ログインしてください。';
+                    setTimeout(() => {
+                        showLoginForm();
+                        document.getElementById('loginEmail').value = email;
+                    }, 2000);
+                } else {
+                    const errorData = await response.json();
+                    registerMessage.style.color = '#e53e3e';
+                    registerMessage.textContent = `登録失敗: ${errorData.message || '不明なエラー'}`;
+                    console.error('新規登録失敗:', response.status, errorData);
+                }
+            } catch (error) {
+                registerMessage.style.color = '#e53e3e';
+                registerMessage.textContent = '通信エラーが発生しました。サーバーが起動しているか確認してください。';
+                console.error('ネットワークエラー:', error);
+            }
+        });
+
+        // ページロード時のトークンチェック
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                console.log('すでにログイン済みです。ダッシュボードへリダイレクトします。');
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>

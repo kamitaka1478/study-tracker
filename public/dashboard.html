@@ -488,7 +488,8 @@
     </div>
   </div>
 
-  <script>
+   <script src="auth.js"></script>
+   <script>
     // APIのベースURL
     const API_BASE_URL = 'http://localhost:3000'; // サーバーのポートに合わせてください
 
@@ -554,15 +555,53 @@
     // APIから統計情報を取得してUIを更新する関数
     async function fetchStats() {
       try {
-        const response = await fetch(`${API_BASE_URL}/stats`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // 認証ヘッダーを取得
+        const headers = getAuthHeaders();
+        // トークンがない場合（ログインしていない場合）はAPIリクエストを行わない
+        if (!headers['Authorization']) {
+            console.warn('統計情報の取得をスキップ: 認証トークンがありません。');
+            // UIをデフォルト値またはエラーメッセージで更新
+            document.getElementById('study-streak').textContent = 'N/A';
+            document.getElementById('totalItems').textContent = 'N/A'; // もしあれば
+            document.getElementById('totalLogs').textContent = 'N/A'; // もしあれば
+            document.getElementById('totalTime').textContent = 'N/A'; // もしあれば
+            document.getElementById('study-categories-container').innerHTML = '<p style="color: white; text-align: center;">ログインして統計情報を表示してください。</p>';
+            return; // 以降の処理を中断
         }
+
+        // fetchリクエストに認証ヘッダーを含める
+        const response = await fetch(`${API_BASE_URL}/stats`, {
+          headers: headers // ここで取得した認証ヘッダーを渡す
+        });
+
+        if (!response.ok) {
+          // HTTPエラーが発生した場合、詳細なメッセージをログに出力
+          const errorText = await response.text(); // エラーレスポンスのボディを取得
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+
         const stats = await response.json();
         console.log('取得した統計情報:', stats);
 
         // 学習連続日数を更新
         document.getElementById('study-streak').textContent = stats.studyStreak;
+
+        // もしあれば、その他の総統計情報を更新
+        // (dashboard.htmlの構造に合わせて適宜追加・修正してください)
+        // 例:
+        if (document.getElementById('totalItems')) {
+            document.getElementById('totalItems').textContent = stats.totalItems || 0;
+        }
+        if (document.getElementById('totalLogs')) {
+            document.getElementById('totalLogs').textContent = stats.totalLogs || 0;
+        }
+        if (document.getElementById('totalTime')) {
+            const totalMinutes = stats.totalTime || 0;
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            document.getElementById('totalTime').textContent = `${totalMinutes}分 （${hours}時間${minutes}分）`;
+        }
+
 
         // 学習分野別進捗を動的に更新
         const categoriesContainer = document.getElementById('study-categories-container');
@@ -580,7 +619,8 @@
         let totalOverallTime = stats.totalTime; // 全体の学習時間 (分)
 
         // categoryStatsがオブジェクトであることを確認し、キーをソートして処理
-        const sortedCategoryNames = Object.keys(stats.categoryStats).sort();
+        // stats.categoryStats が null や undefined の場合に備えて空のオブジェクト {} をフォールバック
+        const sortedCategoryNames = Object.keys(stats.categoryStats || {}).sort();
 
         sortedCategoryNames.forEach(categoryName => {
           const categoryData = stats.categoryStats[categoryName];
@@ -621,7 +661,20 @@
         console.error('統計情報の取得に失敗しました:', error);
         // エラー時はデフォルト値を表示またはメッセージを表示
         document.getElementById('study-streak').textContent = 'N/A';
+        // エラーメッセージを表示する場所がdashboard.htmlに存在しない場合、
+        // study-categories-containerに直接メッセージを追加
         document.getElementById('study-categories-container').innerHTML = '<p style="color: white; text-align: center;">学習統計の読み込みに失敗しました。</p>';
+
+        // 他の統計情報もエラー時にリセット
+        if (document.getElementById('totalItems')) {
+            document.getElementById('totalItems').textContent = 'エラー';
+        }
+        if (document.getElementById('totalLogs')) {
+            document.getElementById('totalLogs').textContent = 'エラー';
+        }
+        if (document.getElementById('totalTime')) {
+            document.getElementById('totalTime').textContent = 'エラー';
+        }
       }
     }
 
