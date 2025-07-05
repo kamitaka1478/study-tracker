@@ -8,13 +8,13 @@
     :root {
       /* 主要なカラーパレット (dashboard.htmlと共通) */
       --color-primary-start: #20b2aa; /* 明るい青緑 (Teal) */
-      --color-primary-end: #008080;    /* 濃い青緑 */
+      --color-primary-end: #008080;      /* 濃い青緑 */
       --color-secondary-start: #48bb78; /* 緑 (成功系) */
-      --color-secondary-end: #38a169;    /* 濃い緑 */
-      --color-danger-start: #f56565;     /* 赤 (削除系) */
-      --color-danger-end: #e53e3e;       /* 濃い赤 */
-      --color-edit-start: #ed8936;       /* オレンジ (編集系) */
-      --color-edit-end: #dd6b20;         /* 濃いオレンジ */
+      --color-secondary-end: #38a169;     /* 濃い緑 */
+      --color-danger-start: #f56565;      /* 赤 (削除系) */
+      --color-danger-end: #e53e3e;        /* 濃い赤 */
+      --color-edit-start: #ed8936;        /* オレンジ (編集系) */
+      --color-edit-end: #dd6b20;          /* 濃いオレンジ */
       --color-info-start: var(--color-secondary-start); 
       --color-info-end: var(--color-secondary-end);     
 
@@ -342,11 +342,11 @@
     <div class="stats">
       <div class="stat-card">
         <div class="stat-number" id="totalItems">0</div>
-        <div>学習項目数</div>
+        <div>総学習項目数</div>
       </div>
       <div class="stat-card">
         <div class="stat-number" id="totalLogs">0</div>
-        <div>学習記録数</div>
+        <div>総学習記録数</div>
       </div>
       <div class="stat-card">
         <div class="stat-number" id="totalTime">0</div>
@@ -494,6 +494,9 @@
         studyItems.forEach(item => {
           // 学習項目一覧の表示
           const li = document.createElement('li');
+          // liにdata-idを設定（削除ボタン、編集ボタンと一致させるため）
+          li.dataset.id = item.id; // ★追加：li要素にもdata-idを設定
+
           li.innerHTML = `
             <div class="item-info">
               <strong>${item.name}</strong> (${item.category})
@@ -584,7 +587,7 @@
         let dailyTotalMinutes = 0;
 
         currentLogs.forEach((log, index) => {
-          // 日付の取得（ISO形式から yyyy-MM-dd に変換）
+          // 日付の取得（ISO形式からYYYY-MM-dd に変換）
           const logDate = toJSTDateString(log.date).split('T')[0];
 
           if (logDate !== currentDate) {
@@ -654,11 +657,12 @@
 
 
     function attachLogEventListeners() {
-      // 削除ボタン（既存のコード）
+      // 削除ボタン（学習ログ）
       document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', async () => {
           if (confirm('本当に削除しますか？')) {
-            const id = button.getAttribute('dataId');
+            // ★修正：getAttribute('dataId') -> dataset.id
+            const id = button.dataset.id; 
             try {
               const headers = getAuthHeaders();
               if (!headers['Authorization']) { return; }
@@ -680,10 +684,11 @@
         });
       });
 
-      // 編集ボタン
+      // 編集ボタン（学習ログ）
       document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', () => {
-          const id = button.getAttribute('dataId');
+          // ★修正：getAttribute('dataId') -> dataset.id
+          const id = button.dataset.id; 
           const log = logs.find(l => String(l.id) === String(id));
 
           if (log) {
@@ -750,15 +755,18 @@
 
 
     function attachStudyItemEventListeners() {
-      // 削除ボタン（既存のコード）
+      // 削除ボタン（学習項目）
       document.querySelectorAll('.delete-item-btn').forEach(button => {
         button.addEventListener('click', async () => {
           if (confirm('この学習項目を本当に削除しますか？\nこの項目に関連する学習ログは削除されません。')) {
-            const id = button.getAttribute('dataId');
+            // ★修正：getAttribute('dataId') -> dataset.id
+            const id = button.dataset.id; 
+            console.log('学習項目削除クリック - ID:', id); // デバッグログ追加
             try {
               const headers = getAuthHeaders();
               if (!headers['Authorization']) { return; }
 
+              // ★修正：/studyItems/ -> /study-items/ （APIパスの統一）
               const res = await fetch(`${API_BASE_URL}/study-items/${id}`, {
                 method: 'DELETE',
                 headers: headers
@@ -779,12 +787,12 @@
         });
       });
 
-      // 編集ボタン - 修正版
+      // 編集ボタン（学習項目）
       document.querySelectorAll('.edit-item-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-          e.preventDefault(); // デフォルトの動作を防ぐ
-          
-          const id = button.getAttribute('dataId');
+          e.preventDefault(); 
+          // ★修正：getAttribute('dataId') -> dataset.id
+          const id = button.dataset.id; 
           console.log('学習項目編集クリック - ID:', id);
           
           const itemToEdit = studyItems.find(item => String(item.id) === String(id));
@@ -797,7 +805,7 @@
             document.getElementById('itemCategory').value = itemToEdit.category;
 
             // ボタンテキストを変更
-            const submitBtn = document.querySelector('#study-item-form button[type="submit"]');
+            const submitBtn = document.querySelector('#studyItemForm button[type="submit"]'); // ★修正：form idをstudyItemFormに統一
             if (submitBtn) {
               submitBtn.textContent = '学習項目を更新';
             }
@@ -975,15 +983,15 @@
 
     // 初期化 (ページロード時に一度だけ実行)
     (async () => {
-      // ページロード時にトークンがない場合、ダッシュボードにリダイレクト
-      if (!localStorage.getItem('jwt_token')) {
-          console.warn("認証トークンが見つかりません。ダッシュボードにリダイレクトします。");
-          alert("ログインが必要です。ダッシュボードに戻ります。");
-          window.location.href = 'dashboard.html';
-          return;
-      }
-      await loadStudyItems();
-      await loadLogs();
+        // ページロード時にトークンがない場合、ダッシュボードにリダイレクト
+        if (!localStorage.getItem('token')) { 
+            console.warn("認証トークンが見つかりません。ダッシュボードにリダイレクトします。");
+            alert("ログインが必要です。ダッシュボードに戻ります。");
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        await loadStudyItems();
+        await loadLogs();
     })();
   </script>
 </body>
