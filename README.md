@@ -88,8 +88,8 @@ GitHub: @kamitaka1478
 - PostgreSQL (RDBMS)
 
 ## ディレクトリ構造
-study-tracker/
 ```bash
+study-tracker/
 ├── data/                    # 開発環境用のデータファイルなどを格納（例: 初期データ）
 ├── node_modules/            # npmモジュール
 ├── public/                  # 静的ファイル (HTML, CSS, JSなど)
