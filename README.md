@@ -89,15 +89,25 @@ GitHub: @kamitaka1478
 
 ## ディレクトリ構造
 study-tracker/
+
 ├── data/                    # 開発環境用のデータファイルなどを格納（例: 初期データ）
+
 ├── node_modules/            # npmモジュール
+
 ├── public/                  # 静的ファイル (HTML, CSS, JSなど)
+
 ├── src/                     # フロントエンドのソースコード（React/Vue/Vanilla JSなど）
+
 ├── .env                     # 環境変数ファイル
+
 ├── .gitignore               # Git管理から除外するファイル
+
 ├── package.json             # プロジェクトのメタデータと依存関係
+
 ├── package-lock.json        # 依存関係の正確なツリー
+
 ├── README.md                # このドキュメント
+
 ├── server.js                # バックエンドのメインサーバーファイル
 └── server.js.backup         # サーバーファイルのバックアップ
 
@@ -107,7 +117,7 @@ study-tracker/
 
 ```bash
 # 1. リポジトリのクローン
-git clone [https://github.com/kamitaka1478/study-tracker.git](https://github.com/kamitaka1478/study-tracker.git)
+git clone https://github.com/kamitaka1478/study-tracker.git
 
 # 2. ディレクトリに移動
 cd study-tracker
