@@ -91,27 +91,17 @@ GitHub: @kamitaka1478
 study-tracker/
 ```bash
 ├── data/                    # 開発環境用のデータファイルなどを格納（例: 初期データ）
-
 ├── node_modules/            # npmモジュール
-
 ├── public/                  # 静的ファイル (HTML, CSS, JSなど)
-
 ├── src/                     # フロントエンドのソースコード（React/Vue/Vanilla JSなど）
-
 ├── .env                     # 環境変数ファイル
-
 ├── .gitignore               # Git管理から除外するファイル
-
 ├── package.json             # プロジェクトのメタデータと依存関係
-
 ├── package-lock.json        # 依存関係の正確なツリー
-
 ├── README.md                # このドキュメント
-
 ├── server.js                # バックエンドのメインサーバーファイル
-
 └── server.js.backup         # サーバーファイルのバックアップ
-
+```
 
 ## セットアップ方法
 以下の手順でアプリケーションをローカル環境で起動できます。
