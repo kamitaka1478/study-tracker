@@ -89,7 +89,7 @@ GitHub: @kamitaka1478
 
 ## ディレクトリ構造
 study-tracker/
-
+```bash
 ├── data/                    # 開発環境用のデータファイルなどを格納（例: 初期データ）
 
 ├── node_modules/            # npmモジュール
@@ -109,6 +109,7 @@ study-tracker/
 ├── README.md                # このドキュメント
 
 ├── server.js                # バックエンドのメインサーバーファイル
+
 └── server.js.backup         # サーバーファイルのバックアップ
 
 
