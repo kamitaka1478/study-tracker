@@ -414,6 +414,7 @@
         <p style="font-size: 1.2rem;">総学習項目数: <span id="stats-total-items">0</span>問</p>
         <p style="font-size: 1.2rem;">総学習時間: <span id="stats-total-time">0時間</span></p>
         <p style="font-size: 1.2rem;">総学習記録数: <span id="stats-total-logs">0回</span></p>
+        <p style="font-size: 1.2rem;">学習連続日数: <span id="stats-study-streak">0日</span></p>
         <p id="stats-error-message" style="color: #f56565; margin-top: 10px;"></p>
       </div>
     </div>
@@ -565,6 +566,7 @@
         const totalItemsSpan = document.getElementById('stats-total-items'); // IDを更新
         const totalTimeSpan = document.getElementById('stats-total-time');   // IDを更新
         const totalLogSpan = document.getElementById('stats-total-logs'); // IDを更新
+        const StudyStreakSpan = document.getElementById('stats-study-streak'); // IDを更新
         const statsErrorMessage = document.getElementById('stats-error-message'); // IDを更新
 
         // エラーメッセージを初期化
@@ -579,6 +581,7 @@
             if (totalItemsSpan) totalItemsSpan.textContent = '0';
             if (totalTimeSpan) totalTimeSpan.textContent = '0分';
             if (totalLogSpan) totalLogSpan.textContent = '0回';
+            if (StudyStreakSpan) StudyStreakSpan.textContent = '0日';
             if (statsErrorMessage) statsErrorMessage.textContent = 'ログインして統計情報を表示してください。';
             return;
         }
@@ -605,7 +608,7 @@
             const minutes = totalMinutes % 60;
             if (totalTimeSpan) totalTimeSpan.textContent = `${hours}時間 ${minutes}分 `;
             if (totalLogSpan) totalLogSpan.textContent = `${stats.totalLogs || '0'}回`;
-
+            if (StudyStreakSpan) StudyStreakSpan.textContent = `${stats.StudyStreak || '0'}日`;
             // categoryStats も同様に処理
             // studyCategoriesContainerへの動的追加ロジック (例: APIからカテゴリデータを取得して表示)
           const studyCategoriesContainer = document.getElementById('study-categories-container'); // IDを更新
@@ -639,6 +642,7 @@
             // エラー時も要素をデフォルト値にリセット
             if (totalItemsSpan) totalItemsSpan.textContent = 'エラー';
             if (totalTimeSpan) totalTimeSpan.textContent = 'エラー';
+            if (totalLogSpan) totalLogsSpan.textContent = 'エラー';
             if (studyStreakSpan) studyStreakSpan.textContent = 'エラー';
         }
     }

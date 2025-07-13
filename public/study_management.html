@@ -352,6 +352,10 @@
         <div class="stat-number" id="totalTime">0</div>
         <div>総学習時間（分）</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-number" id="StudyStreak">0</div>
+        <div>学習連続日数（日）</div>
+      </div>
     </div>
   </div>
 
@@ -832,16 +836,30 @@
     }
 
 
-    function updateStats() {
+    async function updateStats() {
       document.getElementById('totalItems').textContent = studyItems.length;
       document.getElementById('totalLogs').textContent = logs.length;
 
       const totalMinutes = logs.reduce((sum, log) => sum + (parseInt(log.duration) || 0), 0);
-
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       document.getElementById('totalTime').textContent =
         `${totalMinutes}分 （${hours}時間${minutes}分）`;
+
+      // --- 学習連続日数の取得と表示 ---
+      try {
+        const headers = getAuthHeaders();
+        if (!headers['Authorization']) return;
+        const res = await fetch(`${API_BASE_URL}/stats`, { headers });
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('StudyStreak').textContent = stats.studyStreak || 0;
+        } else {
+          document.getElementById('StudyStreak').textContent = 0;
+        }
+      } catch (e) {
+        document.getElementById('StudyStreak').textContent = 0;
+      }
     }
 
     // 学習項目追加フォーム
