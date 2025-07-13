@@ -606,55 +606,66 @@ app.get('/stats', authMiddleware, async (req, res) => {
             categoryStats[item.category].totalTime += categoryTime;
         });
 
+        // JSTの0時で「今日」「昨日」を作る
+        function getJSTDate(date = new Date()) {
+        // UTC→JSTへ変換
+        const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+        jst.setHours(0, 0, 0, 0);
+        return jst;
+        }
+
         // === 学習連続日数の計算 (Study Streak) ===
         let studyStreak = 0;
         if (logs.length > 0) {
-            const uniqueStudyDates = new Set();
-            logs.forEach(log => {
-                uniqueStudyDates.add(log.date.toISOString().split('T')[0]); // DateオブジェクトをYYYY-MM-DD形式に
-            });
+            // 1. 日付文字列（YYYY-MM-DD）でSetを作る
+            const uniqueStudyDates = new Set(logs.map(log => 
+                typeof log.date === 'string'
+                    ? log.date
+                    : log.date.toISOString().split('T')[0]
+            ));
 
+            // 2. 日付配列を昇順で取得
             const datesArray = Array.from(uniqueStudyDates).sort();
 
             if (datesArray.length > 0) {
                 let currentStreak = 0;
                 let lastDate = null;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
 
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getDate() - 1);
+                // 3. 今日・昨日をJSTで取得し、YYYY-MM-DD文字列に
+                const now = new Date();
+                now.setHours(now.getHours() + 9); // JST補正
+                now.setHours(0, 0, 0, 0);
+                const todayStr = now.toISOString().split('T')[0];
 
-                const todayStr = today.toISOString().split('T')[0];
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
                 const yesterdayStr = yesterday.toISOString().split('T')[0];
 
                 let hasStudyTodayOrYesterday = false;
                 if (uniqueStudyDates.has(todayStr)) {
                     currentStreak = 1;
                     hasStudyTodayOrYesterday = true;
-                    lastDate = today;
+                    lastDate = todayStr;
                 } else if (uniqueStudyDates.has(yesterdayStr)) {
                     currentStreak = 1;
                     hasStudyTodayOrYesterday = true;
-                    lastDate = yesterday;
+                    lastDate = yesterdayStr;
                 }
 
                 if (hasStudyTodayOrYesterday) {
                     for (let i = datesArray.length - 1; i >= 0; i--) {
-                        const logDate = new Date(datesArray[i]);
-                        logDate.setHours(0, 0, 0, 0);
+                        const logDateStr = datesArray[i];
+                        if (logDateStr === lastDate) continue;
 
-                        if (logDate.getTime() === lastDate.getTime()) {
-                            continue;
-                        }
-
+                        // 1日前の日付文字列を作成
                         const prevDay = new Date(lastDate);
-                        prevDay.setDate(lastDate.getDate() - 1);
+                        prevDay.setDate(prevDay.getDate() - 1);
+                        const prevDayStr = prevDay.toISOString().split('T')[0];
 
-                        if (logDate.getTime() === prevDay.getTime()) {
+                        if (logDateStr === prevDayStr) {
                             currentStreak++;
-                            lastDate = logDate;
-                        } else if (logDate.getTime() < prevDay.getTime()) {
+                            lastDate = logDateStr;
+                        } else if (logDateStr < prevDayStr) {
                             break;
                         }
                     }
