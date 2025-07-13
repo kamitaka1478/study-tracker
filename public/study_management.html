@@ -353,7 +353,7 @@
         <div>総学習時間（分）</div>
       </div>
       <div class="stat-card">
-        <div class="stat-number" id="StudyStreak">0</div>
+        <div class="stat-number" id="studyStreak">0</div>
         <div>学習連続日数（日）</div>
       </div>
     </div>
@@ -853,12 +853,13 @@
         const res = await fetch(`${API_BASE_URL}/stats`, { headers });
         if (res.ok) {
           const stats = await res.json();
-          document.getElementById('StudyStreak').textContent = stats.studyStreak || 0;
+          console.log('stats:', stats); // ←追加
+          document.getElementById('studyStreak').textContent = stats.studyStreak || 0;
         } else {
-          document.getElementById('StudyStreak').textContent = 0;
+          document.getElementById('studyStreak').textContent = 0;
         }
       } catch (e) {
-        document.getElementById('StudyStreak').textContent = 0;
+        document.getElementById('studyStreak').textContent = 0;
       }
     }
 

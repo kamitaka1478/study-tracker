@@ -404,10 +404,6 @@
           <span class="countdown-number" id="minutesLeft">0</span>
           <span class="countdown-label">分</span>
         </div>
-        <div class="countdown-item">
-          <span class="countdown-number" id="countdown-study-streak">0</span>
-          <span class="countdown-label">回学習</span>
-        </div>
       </div>
 
        <div style="margin-top: 30px; text-align: center; color: rgba(255, 255, 255, 0.9);">
@@ -514,8 +510,7 @@
         document.getElementById('daysLeft').textContent = 0;
         document.getElementById('hoursLeft').textContent = 0;
         document.getElementById('minutesLeft').textContent = 0;
-        document.getElementById('countdown-study-streak').textContent = 0
-        // 必要であれば、カウントダウン終了のメッセージを表示することもできます
+        document.getElementById('stats-study-streak').textContent = `${stats.studyStreak || 0}日`;
         clearInterval(countdownInterval); // カウントダウンを停止
         return; // 関数を終了
       }
@@ -581,7 +576,7 @@
             if (totalItemsSpan) totalItemsSpan.textContent = '0';
             if (totalTimeSpan) totalTimeSpan.textContent = '0分';
             if (totalLogSpan) totalLogSpan.textContent = '0回';
-            if (StudyStreakSpan) StudyStreakSpan.textContent = '0日';
+            if (StudyStreakSpan) StudyStreakSpan.textContent = `${stats.studyStreak || '0'}日`;
             if (statsErrorMessage) statsErrorMessage.textContent = 'ログインして統計情報を表示してください。';
             return;
         }
@@ -599,7 +594,8 @@
             }
 
             const stats = await response.json();
-
+            console.log('stats:', stats); // ←追加
+            
             // ★ここで null チェックを追加する！
             if (totalItemsSpan) totalItemsSpan.textContent = stats.totalItems || '0';
             // totalTimeを時間と分で表示するロジックを追加
@@ -608,7 +604,7 @@
             const minutes = totalMinutes % 60;
             if (totalTimeSpan) totalTimeSpan.textContent = `${hours}時間 ${minutes}分 `;
             if (totalLogSpan) totalLogSpan.textContent = `${stats.totalLogs || '0'}回`;
-            if (StudyStreakSpan) StudyStreakSpan.textContent = `${stats.StudyStreak || '0'}日`;
+            if (StudyStreakSpan) StudyStreakSpan.textContent = `${stats.studyStreak || '0'}日`;
             // categoryStats も同様に処理
             // studyCategoriesContainerへの動的追加ロジック (例: APIからカテゴリデータを取得して表示)
           const studyCategoriesContainer = document.getElementById('study-categories-container'); // IDを更新
@@ -643,7 +639,7 @@
             if (totalItemsSpan) totalItemsSpan.textContent = 'エラー';
             if (totalTimeSpan) totalTimeSpan.textContent = 'エラー';
             if (totalLogSpan) totalLogsSpan.textContent = 'エラー';
-            if (studyStreakSpan) studyStreakSpan.textContent = 'エラー';
+            if (StudyStreakSpan) StudyStreakSpan.textContent = 'エラー';
         }
     }
 
