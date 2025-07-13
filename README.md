@@ -29,7 +29,7 @@ GitHub: @kamitaka1478
    - 学習連続日数でモチベーションを維持できます。
 
 ## 今後の開発予定
-### 1. ユーザー体験（UX）の向上と機能の深化
+### 1. ユーザー体験（UX）の向上と機能の進化
 * **ユーザー認証機能の強化**:
     * **パスワードリセット**: ユーザーがパスワードを忘れた場合に備え、メールによるパスワードリセット機能は必須です。
     * **初回登録時のパスワード確認**: 入力ミスを防ぐため、パスワードの確認入力フィールドを追加しましょう。
@@ -88,6 +88,7 @@ GitHub: @kamitaka1478
 - PostgreSQL (RDBMS)
 
 ## ディレクトリ構造
+```bash
 study-tracker/
 ├── data/                    # 開発環境用のデータファイルなどを格納（例: 初期データ）
 ├── node_modules/            # npmモジュール
@@ -100,14 +101,14 @@ study-tracker/
 ├── README.md                # このドキュメント
 ├── server.js                # バックエンドのメインサーバーファイル
 └── server.js.backup         # サーバーファイルのバックアップ
-
+```
 
 ## セットアップ方法
 以下の手順でアプリケーションをローカル環境で起動できます。
 
 ```bash
 # 1. リポジトリのクローン
-git clone [https://github.com/kamitaka1478/study-tracker.git](https://github.com/kamitaka1478/study-tracker.git)
+git clone https://github.com/kamitaka1478/study-tracker.git
 
 # 2. ディレクトリに移動
 cd study-tracker
@@ -132,4 +133,4 @@ http://localhost:3000
 ## ライセンス
 このプロジェクトは MIT License の下で公開されています。
 MITライセンスは、ソフトウェアの利用、コピー、変更、配布などを許可する非常に寛容なオープンソースライセンスです。
-
+```
